@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AeroScan Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --ink: #14181f; --muted: #5b6472; --line: #e3e6eb;
+    --crit: #b4232a; --high: #d9622b; --med: #c9971c; --low: #3f7fbf; --info: #8a94a3;
+    --ok: #2f8a57; --accent: #2456a6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0f1216; --panel: #171b21; --ink: #e7eaee; --muted: #9aa3af; --line: #262c35;
+            --crit: #ef5a5f; --high: #f08a4b; --med: #e2b844; --low: #6aa6e8; --info: #8a94a3; --ok: #4fbf7f; --accent: #7aa7ff; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; padding: 16px; border-bottom: 1px solid var(--line); }
+  h1 { font-size: 18px; margin: 0; letter-spacing: .2px; }
+  h1 small { color: var(--muted); font-weight: 400; margin-left: 8px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); margin: 0 0 10px; font-weight: 600; }
+  main { display: grid; gap: 16px; padding: 16px; grid-template-columns: repeat(12, 1fr); max-width: 1400px; margin: 0 auto; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+  .s3 { grid-column: span 3; } .s4 { grid-column: span 4; } .s5 { grid-column: span 5; } .s6 { grid-column: span 6; } .s7 { grid-column: span 7; } .s8 { grid-column: span 8; } .s12 { grid-column: span 12; }
+  @media (max-width: 900px) { .s3, .s4, .s5, .s6, .s7, .s8 { grid-column: span 12; } }
+  .big { font-size: 44px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+  .sub { color: var(--muted); font-size: 12px; margin-top: 6px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  input { background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; min-width: 220px; font: inherit; }
+  button { background: var(--accent); color: #fff; border: 0; border-radius: 6px; padding: 7px 12px; font: inherit; cursor: pointer; }
+  .status { font-size: 12px; color: var(--muted); }
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; }
+  .critical { background: var(--crit); } .high { background: var(--high); } .medium { background: var(--med); color: #111; } .low { background: var(--low); } .info { background: var(--info); }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 7px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .table-wrap { overflow-x: auto; }
+  .heat td.cell { text-align: center; font-variant-numeric: tabular-nums; border-radius: 4px; }
+  .muted { color: var(--muted); }
+  .chart-box { position: relative; height: 240px; }
+  .err { color: var(--crit); }
+</style>
+</head>
+<body>
+<header>
+  <h1>AeroScan <small id="scan-label">no scan loaded</small></h1>
+  <div class="row">
+    <input id="token" type="password" placeholder="operator token" autocomplete="off" aria-label="Operator token">
+    <button id="connect">Connect</button>
+    <span class="status" id="status">not connected</span>
+  </div>
+</header>
+
+<main>
+  <section class="panel s3">
+    <h2>Posture score</h2>
+    <div class="big" id="posture">–</div>
+    <div class="sub">100 = no open risk. Falls with the summed context risk of open findings.</div>
+  </section>
+  <section class="panel s3">
+    <h2>Gate denials</h2>
+    <div class="big" id="denied">–</div>
+    <div class="sub" id="denied-sub">requests blocked before reaching the wire</div>
+  </section>
+  <section class="panel s3">
+    <h2>Findings</h2>
+    <div class="big" id="total">–</div>
+    <div class="sub" id="total-sub">correlated across engines</div>
+  </section>
+  <section class="panel s3">
+    <h2>Throttle</h2>
+    <div class="big" id="rate">–</div>
+    <div class="sub" id="rate-sub">current request rate (req/s)</div>
+  </section>
+
+  <section class="panel s5">
+    <h2>Findings by severity</h2>
+    <div class="chart-box"><canvas id="sevChart" aria-label="Findings by severity"></canvas></div>
+  </section>
+  <section class="panel s7">
+    <h2>Throttle behaviour: rate vs latency per window</h2>
+    <div class="chart-box"><canvas id="thrChart" aria-label="Throttle rate and latency"></canvas></div>
+  </section>
+
+  <section class="panel s7">
+    <h2>Top findings by context risk</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Finding</th><th>Severity</th><th>Risk</th><th>Engines</th><th>OWASP</th></tr></thead>
+        <tbody id="top"><tr><td colspan="6" class="muted">no data</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+  <section class="panel s5">
+    <h2>Gate decisions</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Reason</th><th class="num">Count</th></tr></thead>
+        <tbody id="reasons"><tr><td colspan="2" class="muted">no denials</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel s12">
+    <h2>Compliance coverage heatmap</h2>
+    <div class="table-wrap"><table class="heat"><tbody id="heat"><tr><td class="muted">no data</td></tr></tbody></table></div>
+  </section>
+</main>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const SEV = ["critical", "high", "medium", "low", "info"];
+  let token = "";
+  let timer = null;
+  let sevChart = null, thrChart = null;
+
+  try { token = sessionStorage.getItem("aeroscan-token") || ""; } catch (_) {}
+  $("token").value = token;
+
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+
+  function charts() {
+    Chart.defaults.color = css("--muted");
+    Chart.defaults.borderColor = css("--line");
+    sevChart = new Chart($("sevChart"), {
+      type: "bar",
+      data: { labels: SEV, datasets: [{ data: [0, 0, 0, 0, 0], backgroundColor: SEV.map((s) => css("--" + (s === "medium" ? "med" : s === "critical" ? "crit" : s))) }] },
+      options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } },
+    });
+    thrChart = new Chart($("thrChart"), {
+      type: "line",
+      data: { labels: [], datasets: [
+        { label: "rate (req/s)", data: [], borderColor: css("--accent"), backgroundColor: css("--accent"), yAxisID: "y", stepped: true, pointRadius: 2 },
+        { label: "avg latency (s)", data: [], borderColor: css("--high"), backgroundColor: css("--high"), yAxisID: "y1", pointRadius: 2 },
+      ] },
+      options: { maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
+        scales: { y: { beginAtZero: true, title: { display: true, text: "req/s" } },
+                  y1: { beginAtZero: true, position: "right", grid: { drawOnChartArea: false }, title: { display: true, text: "seconds" } },
+                  x: { title: { display: true, text: "evaluation window" } } } },
+    });
+  }
+
+  function render(m) {
+    const s = m.scan;
+    $("scan-label").textContent = s ? `${s.state} · ${s.base_url} · ${s.id.slice(0, 8)}` : "no finished scan yet";
+    $("posture").textContent = m.posture_score ?? "–";
+    $("posture").style.color = m.posture_score == null ? "" : m.posture_score >= 75 ? css("--ok") : m.posture_score >= 40 ? css("--med") : css("--crit");
+    $("denied").textContent = m.gate.denied;
+    $("denied-sub").textContent = `${m.gate.allowed} allowed · ${m.gate.pre_scan_refusals} refused before scanning`;
+    $("total").textContent = m.findings.total;
+    $("total-sub").textContent = `${m.findings.multi_engine} confirmed by more than one engine`;
+
+    const t = m.throttle;
+    $("rate").textContent = t ? t.rate : "–";
+    $("rate-sub").textContent = t ? (t.aborted ? "aborted: " + t.aborted : `${t.requests} requests sent`) : "current request rate (req/s)";
+    $("rate-sub").className = "sub" + (t && t.aborted ? " err" : "");
+
+    sevChart.data.datasets[0].data = SEV.map((k) => m.findings.by_severity[k] || 0);
+    sevChart.update();
+    const hist = (t && t.history) || [];
+    thrChart.data.labels = hist.map((_, i) => i + 1);
+    thrChart.data.datasets[0].data = hist.map((h) => h.rate);
+    thrChart.data.datasets[1].data = hist.map((h) => h.avg_latency);
+    thrChart.update();
+
+    $("top").innerHTML = m.findings.top.length ? m.findings.top.map((f) => `
+      <tr><td>${f.rank}</td><td>${esc(f.title)}<div class="muted">${esc(f.url_template)}</div></td>
+      <td><span class="pill ${esc(f.severity)}">${esc(f.severity)}</span></td><td class="num">${f.risk_score}</td>
+      <td>${f.sources.map(esc).join(", ")}</td><td class="muted">${esc((f.owasp[0] || "").split(" ")[0])}</td></tr>`).join("")
+      : '<tr><td colspan="6" class="muted">no findings</td></tr>';
+
+    const reasons = Object.entries(m.gate.deny_reasons).sort((a, b) => b[1] - a[1]);
+    $("reasons").innerHTML = reasons.length ? reasons.map(([r, n]) => `<tr><td>${esc(r)}</td><td class="num">${n}</td></tr>`).join("")
+      : '<tr><td colspan="2" class="muted">no denials</td></tr>';
+
+    const fw = { owasp: "OWASP", pci_dss_v4: "PCI DSS v4.0", mas_trm: "MAS TRM" };
+    const max = Math.max(1, ...Object.values(m.compliance).flatMap((o) => Object.values(o)));
+    const accent = css("--accent");
+    let html = "";
+    for (const [key, label] of Object.entries(fw)) {
+      const entries = Object.entries(m.compliance[key] || {}).sort();
+      html += `<tr><th style="width:140px">${label}</th><td>`;
+      html += entries.length ? entries.map(([ctrl, n]) => {
+        const a = 0.15 + 0.85 * (n / max);
+        return `<span class="cell" title="${esc(ctrl)}: ${n}" style="display:inline-block;margin:2px;padding:4px 8px;border-radius:4px;background:color-mix(in srgb, ${accent} ${Math.round(a * 100)}%, transparent);color:${a > .55 ? "#fff" : "inherit"}">${esc(ctrl.split(" ")[0])} · ${n}</span>`;
+      }).join("") : '<span class="muted">none</span>';
+      html += "</td></tr>";
+    }
+    $("heat").innerHTML = html;
+  }
+
+  async function poll() {
+    try {
+      const r = await fetch("/metrics", { headers: { Authorization: "Bearer " + token } });
+      if (r.status === 401) { $("status").textContent = "token rejected"; $("status").className = "status err"; return stop(); }
+      if (!r.ok) throw new Error("http " + r.status);
+      render(await r.json());
+      $("status").textContent = "live · " + new Date().toLocaleTimeString();
+      $("status").className = "status";
+    } catch (e) {
+      $("status").textContent = "metrics unavailable (" + e.message + ")";
+      $("status").className = "status err";
+    }
+  }
+
+  function stop() { if (timer) clearInterval(timer); timer = null; }
+  function start() {
+    token = $("token").value.trim();
+    try { sessionStorage.setItem("aeroscan-token", token); } catch (_) {}
+    stop(); poll(); timer = setInterval(poll, 5000);
+  }
+
+  charts();
+  $("connect").addEventListener("click", start);
+  $("token").addEventListener("keydown", (e) => { if (e.key === "Enter") start(); });
+  if (token) start();
+})();
+</script>
+</body>
+</html>

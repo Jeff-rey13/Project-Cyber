@@ -10,7 +10,9 @@ from sqlmodel import Session
 
 from ..engines.base import RawFinding, ScanContext
 from ..engines.registry import ENGINES, EngineFactory
+from ..compliance import mapper
 from ..findings.raw_store import save_raw
+from ..findings.store import normalize_job
 from ..scope.domains import canonical_domain
 from ..scope.gate import parse_target
 from ..scope.snapshot import ScopeDefinition, ScopeSnapshot, capture_snapshot
@@ -142,6 +144,10 @@ def execute_scan(
         return transition(session, job, ScanState.FAILED, actor, f"runner error: {type(exc).__name__}: {exc}")
 
     save_raw(session, job.id, findings)
+    # normalise + map straight away so the api and dashboard never see half-processed results
+    rows = normalize_job(session, job.id)
+    mapper.apply(rows)
+    session.add_all(rows)
     job.options = {**job.options, "gate_stats": stats.as_dict(), "engine_errors": errors, "throttle": throttle.snapshot()}
     session.add(job)
     session.commit()

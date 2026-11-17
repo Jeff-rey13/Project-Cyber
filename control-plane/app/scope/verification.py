@@ -101,10 +101,13 @@ def check_verification(
     session: Session,
     raw_domain: str,
     actor: str,
-    txt_lookup: TxtLookup = dns_txt_lookup,
-    file_fetch: FileFetch = http_file_fetch,
+    txt_lookup: Optional[TxtLookup] = None,
+    file_fetch: Optional[FileFetch] = None,
     now: Optional[datetime] = None,
 ) -> bool:
+    # resolved per call (not as default args) so the real lookups can be swapped out in one place
+    txt_lookup = txt_lookup or dns_txt_lookup
+    file_fetch = file_fetch or http_file_fetch
     domain = canonical_domain(raw_domain)
     now = now or utcnow()
     v = _pending(session, domain)
