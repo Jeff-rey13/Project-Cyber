@@ -143,8 +143,9 @@ def risk_score(f: MergedFinding, ctx: Optional[EndpointContext] = None) -> float
         mult *= v
     mult = min(mult, RISK_MULT_CAP)
     f.risk_factors = {**factors, "multiplier": round(mult, 3)}
-    # clamp to the cvss scale so a capped 2x on a 9.1 still reads as "max", not 18.2
-    f.risk_score = round(min(f.cvss_base * mult, 10.0), 1)
+    # 0..20 by design (cvss x a multiplier capped at 2). clamping to 10 would flatten every
+    # serious finding into a tie and lose exactly the ordering this score exists for.
+    f.risk_score = round(f.cvss_base * mult, 1)
     return f.risk_score
 
 

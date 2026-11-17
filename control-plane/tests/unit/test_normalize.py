@@ -88,12 +88,22 @@ def test_risk_multipliers(cls, method, evidence, ctx, expected_mult):
     (m,) = correlate([raw(cls=cls, method=method, evidence=evidence, sev="medium")])
     score = risk_score(m, ctx)
     assert m.risk_factors["multiplier"] == pytest.approx(expected_mult)
-    assert score == round(min(5.3 * expected_mult, 10.0), 1)
+    assert score == round(5.3 * expected_mult, 1)
 
 
-def test_risk_capped_at_ten():
+def test_risk_tops_out_at_twice_cvss():
     (m,) = correlate([raw(cls="bola", sev="critical", method="POST")])
-    assert risk_score(m, EndpointContext(requires_auth=True)) == 10.0
+    assert risk_score(m, EndpointContext(requires_auth=True)) == round(9.1 * RISK_MULT_CAP, 1)
+
+
+def test_serious_findings_stay_distinguishable():
+    crit, high, med = correlate([
+        raw(engine="authz", cls="broken_auth", sev="critical", url="http://h/bookings/Q7X2KD", evidence="[date]"),
+        raw(engine="authz", cls="bola", sev="high", url="http://h/bookings/Q7X2KD"),
+        raw(engine="api_checks", cls="excessive_data_exposure", sev="medium", url="http://h/bookings/Q7X2KD"),
+    ])
+    scores = [risk_score(f) for f in (crit, high, med)]
+    assert scores == sorted(scores, reverse=True) and len(set(scores)) == 3
 
 
 def test_rank_orders_by_risk_then_agreement():

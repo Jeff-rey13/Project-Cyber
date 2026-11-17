@@ -19,9 +19,11 @@ def known() -> set[str]:
 
 def register_defaults() -> None:
     """Engines that need no external binary or service. zap/nuclei register from config at startup."""
+    from .api_checks import ApiChecksEngine
     from .authz_engine import AuthzEngine
 
     register("authz", AuthzEngine)
+    register("api_checks", ApiChecksEngine)
 
 
 register_defaults()

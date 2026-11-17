@@ -115,7 +115,7 @@ CWE_CLASS = {
     79: "xss", 89: "sqli", 22: "path_traversal", 98: "rfi", 352: "csrf", 200: "info_disclosure", 359: "pii_disclosure",
     639: "bola", 284: "bola", 306: "broken_auth", 287: "broken_auth", 915: "mass_assignment", 770: "missing_rate_limit",
     307: "missing_rate_limit", 693: "missing_security_header", 16: "security_misconfiguration", 319: "cleartext_transport",
-    1004: "loose_cookie", 614: "loose_cookie",
+    1004: "loose_cookie", 614: "loose_cookie", 213: "excessive_data_exposure",
 }
 FALLBACK = _c(["API8"], ["A05"], ["6.2.4"], ["5"],
               "Triage manually; the issue maps to general secure-development and configuration controls.")
