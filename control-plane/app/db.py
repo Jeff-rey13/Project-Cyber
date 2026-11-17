@@ -15,7 +15,7 @@ def make_engine(url: str):
 
 def init_db(engine) -> None:
     # import for side effect: registers every table on the metadata
-    from .findings import raw_store  # noqa: F401
+    from .findings import raw_store, store  # noqa: F401
     from .orchestrator import state  # noqa: F401
     from .scope import models  # noqa: F401
 
