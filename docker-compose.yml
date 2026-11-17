@@ -1,19 +1,78 @@
-# services get added as each module lands (see PRD section 13)
+# one-command bring-up: `make up` (or `docker compose up -d --build`)
+#
+# network layout, and why:
+#   - the lab shares the worker's network namespace, so from the worker it is 127.0.0.1:8080.
+#     that's what lets it pass the loopback-only self-verify honestly, with no special case.
+#   - zap sits on `engines`, an internal network with no internet and no route to the lab.
+#     its only way to the target is the gate proxy the worker opens on :8899 during a scan.
+#   - nothing here listens on anything but the host's loopback.
+
 services:
   redis:
-    image: redis:7-alpine
+    image: redis:7.4-alpine
+    networks: [control]
+
+  worker:
+    build:
+      context: ./control-plane
+      additional_contexts:
+        dashboard: ./dashboard
+    command: ["rq", "worker", "--url", "redis://redis:6379/0", "aeroscan-scans"]
+    env_file: .env
+    environment:
+      DATABASE_URL: sqlite:////data/aeroscan.db
+      REDIS_URL: redis://redis:6379/0
+      AEROSCAN_GATE_PROXY_BIND: 0.0.0.0
+      AEROSCAN_GATE_PROXY_HOST: worker
+      AEROSCAN_GATE_PROXY_PORT: "8899"
+      ZAP_API_URL: http://zap:8090
+      NUCLEI_BINARY: /usr/local/bin/nuclei
+    volumes: [aeroscan-data:/data]
+    networks: [control, engines]
+    ports:
+      - "127.0.0.1:8080:8080"   # the lab's port, published from the shared namespace
+    depends_on: [redis]
 
   nimbus-air:
     build: ./target-plane/nimbus-air
+    network_mode: "service:worker"
     environment:
       NIMBUS_SECURE_MODE: ${NIMBUS_SECURE_MODE:-false}
       NIMBUS_SEED: ${NIMBUS_SEED:-1337}
-      # db lives inside the container on purpose; a fresh `up` means a fresh, identical seed
+      NIMBUS_INJECT_LATENCY_MS: ${NIMBUS_INJECT_LATENCY_MS:-0}
       NIMBUS_DATABASE_URL: sqlite:////tmp/nimbus.db
-    # loopback only. the lab is deliberately vulnerable and must not face the network.
-    ports:
-      - "127.0.0.1:8080:8080"
+    depends_on: [worker]
 
-  # control-plane:   # step 5+
-  # worker:          # step 7
-  # zap:             # step 8, isolated network
+  api:
+    build:
+      context: ./control-plane
+      additional_contexts:
+        dashboard: ./dashboard
+    env_file: .env
+    environment:
+      DATABASE_URL: sqlite:////data/aeroscan.db
+      REDIS_URL: redis://redis:6379/0
+      AEROSCAN_LAB_SELF_VERIFY: "true"
+      ZAP_API_URL: http://zap:8090
+      NUCLEI_BINARY: /usr/local/bin/nuclei
+    volumes: [aeroscan-data:/data]
+    networks: [control]
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on: [redis, worker]
+
+  zap:
+    image: ghcr.io/zaproxy/zaproxy:2.15.0
+    command: >
+      zap.sh -daemon -host 0.0.0.0 -port 8090
+      -config api.key=${ZAP_API_KEY}
+      -config api.addrs.addr.name=.* -config api.addrs.addr.regex=true
+    networks: [engines]
+
+networks:
+  control: {}
+  engines:
+    internal: true
+
+volumes:
+  aeroscan-data: {}

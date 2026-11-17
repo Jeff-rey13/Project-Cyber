@@ -46,6 +46,7 @@ class ZapConfig:
 
 class ZapAdapter:
     name = "zap"
+    needs_gate_proxy = True
 
     def __init__(self, config: ZapConfig, api_client: Optional[httpx.Client] = None,
                  sleep: Callable[[float], None] = time.sleep, key: bytes = b""):

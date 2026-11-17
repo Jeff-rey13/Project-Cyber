@@ -208,7 +208,9 @@ class AuthzEngine:
                          "confirmed by that identity's seed markers in the response body"),
             evidence=redact(_compact(resp.text), identities),
             cwe=639 if cls == "bola" else 306,
-            extra={"template": ep.template, "status": resp.status_code, **extra},
+            # these endpoints are meant to require auth (the baseline needed a token); that's the
+            # requires_auth context the risk score expects, even when the bug is that it doesn't
+            extra={"template": ep.template, "status": resp.status_code, "requires_auth": True, **extra},
         )
 
 

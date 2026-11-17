@@ -32,3 +32,6 @@ reports/out/
 .idea/
 .DS_Store
 Thumbs.db
+
+# local scan inputs
+identities.json

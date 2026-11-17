@@ -1,6 +1,7 @@
 """Scan lifecycle operations. The API and the worker both call these; nothing pokes job state directly."""
 
 from collections.abc import Callable, Mapping
+from contextlib import contextmanager
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from typing import Optional
@@ -17,6 +18,7 @@ from ..scope.domains import canonical_domain
 from ..scope.gate import parse_target
 from ..scope.snapshot import ScopeDefinition, ScopeSnapshot, capture_snapshot
 from ..scope.verification import is_verified
+from .gate_proxy import GateProxy
 from .guarded_client import GateStats, guarded_client
 from .state import ScanJob, ScanState, transition
 from .throttle import AdaptiveThrottle, ThrottleConfig
@@ -27,6 +29,11 @@ HARD_MAX_ENGINE_CONCURRENCY = 4
 
 class ScanRefused(Exception):
     pass
+
+
+@contextmanager
+def _null():
+    yield None
 
 
 def throttle_config_from(raw: Optional[dict]) -> ThrottleConfig:
@@ -111,6 +118,7 @@ def execute_scan(
     clock: Optional[Callable[[], datetime]] = None,
     stats: Optional[GateStats] = None,
     throttle: Optional[AdaptiveThrottle] = None,
+    proxy_bind: tuple[str, int] = ("127.0.0.1", 0),
 ) -> ScanJob:
     job = session.get(ScanJob, job_id)
     if job is None:
@@ -132,8 +140,13 @@ def execute_scan(
     errors: list[str] = []
     try:
         client = guarded_client(snapshot, key, stats=stats, inner_transport=inner_transport, clock=clock, throttle=throttle)
-        with client, ThreadPoolExecutor(max_workers=min(len(job.engines), HARD_MAX_ENGINE_CONCURRENCY)) as pool:
-            futures = {pool.submit(registry[name]().run, client, snapshot, ctx): name for name in job.engines}
+        engines = {name: registry[name]() for name in job.engines}
+        # external engines reach the target only through this proxy, and only while the scan runs
+        proxy = GateProxy(client, *proxy_bind) if any(getattr(e, "needs_gate_proxy", False) for e in engines.values()) else None
+        if proxy:
+            ctx.options = {**ctx.options, "gate_proxy": "http://{}:{}".format(*proxy.address)}
+        with client, (proxy or _null()), ThreadPoolExecutor(max_workers=min(len(engines), HARD_MAX_ENGINE_CONCURRENCY)) as pool:
+            futures = {pool.submit(e.run, client, snapshot, ctx): name for name, e in engines.items()}
             for fut in as_completed(futures):
                 name = futures[fut]
                 try:
@@ -149,6 +162,8 @@ def execute_scan(
     mapper.apply(rows)
     session.add_all(rows)
     job.options = {**job.options, "gate_stats": stats.as_dict(), "engine_errors": errors, "throttle": throttle.snapshot()}
+    if "gate_proxy" in ctx.options:
+        job.options["gate_proxy"] = ctx.options["gate_proxy"]
     session.add(job)
     session.commit()
 

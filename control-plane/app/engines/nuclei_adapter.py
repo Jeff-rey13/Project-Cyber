@@ -59,6 +59,7 @@ class NucleiConfig:
 
 class NucleiAdapter:
     name = "nuclei"
+    needs_gate_proxy = True
 
     def __init__(self, config: NucleiConfig, runner: Runner = subprocess_runner):
         self.cfg = config

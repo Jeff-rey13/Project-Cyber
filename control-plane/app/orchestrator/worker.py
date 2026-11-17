@@ -8,6 +8,7 @@ from sqlmodel import Session
 
 from ..config import get_settings
 from ..db import init_db, make_engine
+from ..engines.registry import register_from_settings
 from .service import execute_scan
 
 QUEUE_NAME = "aeroscan-scans"
@@ -29,7 +30,10 @@ def enqueuer(queue: Queue) -> Callable[[str], None]:
 
 def run_scan_job(job_id: str) -> str:
     settings = get_settings()
+    register_from_settings(settings)
     engine = make_engine(settings.database_url)
     init_db(engine)
     with Session(engine) as session:
-        return execute_scan(session, job_id, settings.snapshot_key).state.value
+        job = execute_scan(session, job_id, settings.snapshot_key,
+                           proxy_bind=(settings.gate_proxy_bind, settings.gate_proxy_port))
+        return job.state.value
