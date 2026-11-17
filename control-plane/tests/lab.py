@@ -29,7 +29,9 @@ def _free_port() -> int:
 def nimbus(tmp_path: Path, secure: bool, extra_env: dict | None = None):
     port = _free_port()
     db = tmp_path / f"nimbus-{'secure' if secure else 'insecure'}.db"
-    env = {**os.environ, "NIMBUS_SECURE_MODE": "true" if secure else "false",
+    # drop pytest-cov's subprocess hooks: the lab is the target, not code under test here
+    base_env = {k: v for k, v in os.environ.items() if not k.startswith("COV_CORE")}
+    env = {**base_env, "NIMBUS_SECURE_MODE": "true" if secure else "false",
            "NIMBUS_DATABASE_URL": f"sqlite:///{db.as_posix()}", **(extra_env or {})}
     proc = subprocess.Popen(
         [sys.executable, "-m", "uvicorn", "app.asgi:app", "--host", "127.0.0.1", "--port", str(port), "--log-level", "warning"],
