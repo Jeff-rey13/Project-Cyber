@@ -71,7 +71,8 @@ def create_app(settings: Optional[Settings] = None, engine=None) -> FastAPI:
             # VULN-2: insecure mode trusts whatever the token body says
             claims = tokens.decode(authorization[7:].strip(), settings.token_secret, verify_signature=secure)
         except tokens.TokenError:
-            raise HTTPException(status.HTTP_401_UNAUTHORIZED, "invalid token", headers={"WWW-Authenticate": "Bearer"})
+            # from None: the token internals aren't useful to anyone reading the traceback
+            raise HTTPException(status.HTTP_401_UNAUTHORIZED, "invalid token", headers={"WWW-Authenticate": "Bearer"}) from None
         customer = session.get(Customer, claims["sub"])
         if customer is None:
             raise HTTPException(status.HTTP_401_UNAUTHORIZED, "invalid token")
@@ -140,7 +141,8 @@ def create_app(settings: Optional[Settings] = None, engine=None) -> FastAPI:
             try:
                 changes = ContactUpdate.model_validate(body).model_dump(exclude_unset=True, exclude_none=True)
             except ValidationError as exc:
-                raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, exc.errors(include_url=False, include_context=False))
+                detail = exc.errors(include_url=False, include_context=False)
+                raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail) from exc
         else:
             # VULN-4: binds every known model field straight from the request
             changes = {k: v for k, v in body.items() if k in Customer.model_fields and k not in _NEVER_ASSIGNABLE}
@@ -169,7 +171,8 @@ def create_app(settings: Optional[Settings] = None, engine=None) -> FastAPI:
                 raise HTTPException(status.HTTP_401_UNAUTHORIZED, "missing bearer token", headers={"WWW-Authenticate": "Bearer"})
             client = request.client.host if request.client else "unknown"
             if not app.state.lookup_limiter.allow(f"{client}:{customer.id}"):
-                raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "slow down", headers={"Retry-After": str(settings.lookup_window_seconds)})
+                retry = {"Retry-After": str(settings.lookup_window_seconds)}
+                raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "slow down", headers=retry)
             return BookingOut.model_validate(owned_booking(pnr, customer, session), from_attributes=True)
 
         # VULN-5: no limiter here at all

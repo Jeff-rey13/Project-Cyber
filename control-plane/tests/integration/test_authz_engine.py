@@ -62,7 +62,8 @@ def test_leak_detection_needs_markers():
 
 def test_redaction_strips_markers_and_pii_shapes():
     ids = [Identity("bob", ["P1"], ["Bob Lim", "X1234567"])]
-    out = redact('{"n":"Bob Lim","p":"X1234567","dob":"1990-02-03","e":"bob@nimbus.test","c":"4000 **** **** 1234","t":"+65 91234567"}', ids)
+    body = '{"n":"Bob Lim","p":"X1234567","dob":"1990-02-03","e":"bob@nimbus.test","c":"4000 **** **** 1234","t":"+65 91234567"}'
+    out = redact(body, ids)
     for leaked in ("Bob Lim", "X1234567", "1990-02-03", "bob@nimbus.test", "1234", "91234567"):
         assert leaked not in out
     assert "[bob:marker0]" in out

@@ -16,7 +16,10 @@ jobs:
           cache-dependency-path: control-plane/requirements.txt
 
       - name: install
-        run: pip install -r control-plane/requirements.txt
+        run: pip install -r control-plane/requirements.txt ruff==0.8.4
+
+      - name: lint
+        run: ruff check control-plane target-plane scripts
 
       - name: lab (paired exploit/fix tests)
         working-directory: target-plane/nimbus-air

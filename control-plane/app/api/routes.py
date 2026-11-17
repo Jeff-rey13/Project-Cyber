@@ -78,7 +78,7 @@ def create_api(settings: Settings, engine, enqueue: Callable[[str], None]) -> Fa
         try:
             v, instruction = verif.begin_verification(s, domain, who, body.method)
         except (InvalidDomain, verif.VerificationError) as exc:
-            raise HTTPException(400, str(exc))
+            raise HTTPException(400, str(exc)) from exc
         return {"domain": v.domain, "method": v.method.value, "instruction": instruction, "expires_at": v.expires_at}
 
     @r.post("/targets/{domain}/verification/check")
@@ -86,7 +86,7 @@ def create_api(settings: Settings, engine, enqueue: Callable[[str], None]) -> Fa
         try:
             ok = verif.check_verification(s, domain, who)
         except InvalidDomain as exc:
-            raise HTTPException(400, str(exc))
+            raise HTTPException(400, str(exc)) from exc
         return {"domain": domain, "verified": ok}
 
     @r.post("/targets/{host}/self-verify")
@@ -94,7 +94,7 @@ def create_api(settings: Settings, engine, enqueue: Callable[[str], None]) -> Fa
         try:
             v = verif.self_verify_loopback(s, host, who)
         except (InvalidDomain, verif.VerificationError) as exc:
-            raise HTTPException(400, str(exc))
+            raise HTTPException(400, str(exc)) from exc
         return {"domain": v.domain, "verified": True, "proof": v.proof}
 
     @r.get("/targets")
@@ -110,10 +110,10 @@ def create_api(settings: Settings, engine, enqueue: Callable[[str], None]) -> Fa
             definition = ScopeDefinition.model_validate(body.scope)
             job = service.create_scan(s, who, body.base_url, definition, body.engines, body.options, registry=ENGINES)
         except ValidationError as exc:
-            raise HTTPException(422, exc.errors(include_url=False, include_context=False))
+            raise HTTPException(422, exc.errors(include_url=False, include_context=False)) from exc
         except (service.ScanRefused, InvalidDomain) as exc:
             audit.append(s, who, "scan.refused", {"base_url": body.base_url, "reason": str(exc)})
-            raise HTTPException(400, str(exc))
+            raise HTTPException(400, str(exc)) from exc
         return _job_view(job)
 
     def _job(s: Session, job_id: str) -> ScanJob:
@@ -141,7 +141,7 @@ def create_api(settings: Settings, engine, enqueue: Callable[[str], None]) -> Fa
             job = service.queue_scan(s, job, who, settings.snapshot_key, enqueue)
         except (service.ScanRefused, ScopeError) as exc:
             audit.append(s, who, "scan.refused", {"job_id": job_id, "reason": str(exc)})
-            raise HTTPException(409, str(exc))
+            raise HTTPException(409, str(exc)) from exc
         return _job_view(job)
 
     @r.post("/scans/{job_id}/abort")
@@ -149,7 +149,7 @@ def create_api(settings: Settings, engine, enqueue: Callable[[str], None]) -> Fa
         try:
             return _job_view(service.abort_scan(s, _job(s, job_id), who))
         except IllegalTransition as exc:
-            raise HTTPException(409, str(exc))
+            raise HTTPException(409, str(exc)) from exc
 
     @r.get("/scans/{job_id}/findings")
     def findings(job_id: str, s: Session = Depends(get_session)):
