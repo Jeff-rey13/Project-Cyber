@@ -1,0 +1,9 @@
+# skeleton only; services get build contexts as each module lands (see PRD section 13)
+services:
+  redis:
+    image: redis:7-alpine
+
+  # nimbus-air:      # step 2-4
+  # control-plane:   # step 5+
+  # worker:          # step 7
+  # zap:             # step 8, isolated network
