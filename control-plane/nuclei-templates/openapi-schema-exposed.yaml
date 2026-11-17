@@ -1,0 +1,26 @@
+id: aeroscan-openapi-schema-exposed
+
+info:
+  name: OpenAPI schema publicly exposed
+  author: aeroscan
+  severity: low
+  description: The full API inventory is served unauthenticated, which hands an attacker every endpoint and parameter name.
+  tags: exposure,openapi,api
+  classification:
+    cwe-id: CWE-200
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/openapi.json"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status:
+          - 200
+      - type: word
+        part: body
+        words:
+          - '"openapi"'
+          - '"paths"'
+        condition: and

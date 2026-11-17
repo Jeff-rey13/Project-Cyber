@@ -1,0 +1,25 @@
+id: aeroscan-booking-lookup-unauthenticated
+
+info:
+  name: Booking lookup answers without authentication
+  author: aeroscan
+  severity: high
+  description: A booking endpoint returns passenger data to a caller that sent no credentials.
+  tags: auth-bypass,airline,api
+  classification:
+    cwe-id: CWE-306
+
+# pnr is supplied per scan via -var pnr=XXXXXX; without it the request 404s and nothing matches
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/bookings/{{pnr}}"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status:
+          - 200
+      - type: word
+        part: body
+        words:
+          - '"passenger_name"'

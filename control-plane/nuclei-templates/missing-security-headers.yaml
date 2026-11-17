@@ -1,0 +1,26 @@
+id: aeroscan-missing-security-headers
+
+info:
+  name: Baseline security headers missing
+  author: aeroscan
+  severity: low
+  description: Responses lack Strict-Transport-Security and X-Content-Type-Options.
+  tags: misconfig,headers
+  classification:
+    cwe-id: CWE-693
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/health"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status:
+          - 200
+      - type: word
+        part: header
+        words:
+          - "x-content-type-options"
+        negative: true
+        case-insensitive: true
