@@ -47,7 +47,14 @@ def _print_findings(rows: list[dict]) -> None:
 
 
 def cmd_scan(a) -> int:
-    opts = json.load(open(a.identities, encoding="utf-8")) if a.identities else {}
+    if a.identities == "-":
+        # piped in, so nothing has to be copied into the container first
+        opts = json.load(sys.stdin)
+    elif a.identities:
+        with open(a.identities, encoding="utf-8") as fh:
+            opts = json.load(fh)
+    else:
+        opts = {}
     host = urlsplit(a.base_url).hostname
     with _client() as c:
         r = c.post("/scans", json={"base_url": a.base_url, "scope": _scope(host, a.hours, a.deny),
@@ -69,8 +76,12 @@ def cmd_scan(a) -> int:
         final = c.get(f"/scans/{job['id']}").json()
         if final.get("error"):
             print(f"note: {final['error']}")
+        errors = (final.get("options") or {}).get("engine_errors") or []
+        for e in errors:
+            # partial results are still results, but nobody should mistake them for a clean scan
+            print(f"WARNING engine failed: {e}")
         _print_findings(c.get(f"/scans/{job['id']}/findings").json())
-    return 0 if state == "COMPLETED" else 2
+    return 0 if state == "COMPLETED" and not errors else 2
 
 
 def cmd_try_unverified(a) -> int:
@@ -98,7 +109,7 @@ def main(argv=None) -> int:
     sub = p.add_subparsers(dest="cmd", required=True)
     s = sub.add_parser("scan")
     s.add_argument("--base-url", default="http://127.0.0.1:8080")
-    s.add_argument("--identities", help="json file with {'identities': [...]}")
+    s.add_argument("--identities", help="json file with {'identities': [...]}, or - for stdin")
     s.add_argument("--engines", default="authz,api_checks")
     s.add_argument("--hours", type=float, default=1.0)
     s.add_argument("--deny", action="append", default=[])

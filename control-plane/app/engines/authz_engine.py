@@ -201,7 +201,9 @@ class AuthzEngine:
             title=title,
             url=str(resp.request.url),
             method=ep.method,
-            param=ep.param,
+            # the path param is already in the url template; "param" is for query/body names, and
+            # setting it here kept this finding from merging with other engines' view of the same bug
+            param=None,
             severity=sev,
             confidence="high",
             description=("object-level authorization missing: a caller received another identity's record, "
@@ -210,7 +212,7 @@ class AuthzEngine:
             cwe=639 if cls == "bola" else 306,
             # these endpoints are meant to require auth (the baseline needed a token); that's the
             # requires_auth context the risk score expects, even when the bug is that it doesn't
-            extra={"template": ep.template, "status": resp.status_code, "requires_auth": True, **extra},
+            extra={"template": ep.template, "path_param": ep.param, "status": resp.status_code, "requires_auth": True, **extra},
         )
 
 

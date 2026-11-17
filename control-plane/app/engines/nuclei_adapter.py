@@ -11,7 +11,7 @@ import json
 import shutil
 import subprocess
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Optional
 
@@ -27,8 +27,9 @@ DEFAULT_TEMPLATES = Path(__file__).resolve().parents[2] / "nuclei-templates"
 
 # template tags -> our vuln class, first match wins
 TAG_CLASS = [
-    ("sqli", "sqli"), ("xss", "xss"), ("exposure", "info_disclosure"), ("openapi", "api_inventory_exposure"),
-    ("swagger", "api_inventory_exposure"), ("misconfig", "security_misconfiguration"), ("headers", "missing_security_header"),
+    # specific tags before generic ones: an openapi template is also tagged "exposure"
+    ("sqli", "sqli"), ("xss", "xss"), ("openapi", "api_inventory_exposure"), ("swagger", "api_inventory_exposure"),
+    ("headers", "missing_security_header"), ("exposure", "info_disclosure"), ("misconfig", "security_misconfiguration"),
     ("default-login", "broken_auth"), ("auth-bypass", "broken_auth"), ("idor", "bola"), ("lfi", "path_traversal"),
 ]
 
@@ -88,6 +89,9 @@ class NucleiAdapter:
         return args
 
     def run(self, client: Optional[httpx.Client], scope: ScopeSnapshot, ctx: ScanContext) -> list[RawFinding]:
+        # booking templates need a real record locator; borrow the first test identity's own one
+        if "pnr" not in self.cfg.variables and ctx.identities and ctx.identities[0].get("objects"):
+            self.cfg = replace(self.cfg, variables={**self.cfg.variables, "pnr": str(ctx.identities[0]["objects"][0])})
         try:
             code, out, err = self._run(self.argv(ctx.base_url), self.cfg.timeout_seconds)
         except FileNotFoundError as exc:

@@ -138,3 +138,34 @@ def test_first_seen_carries_across_jobs(session):
     second = normalize_job(session, "job-b")[0]
     assert second.fingerprint == first.fingerprint
     assert second.first_seen == first.first_seen and second.last_seen >= first.last_seen
+
+
+def test_site_wide_header_findings_collapse_across_urls_and_engines():
+    findings = correlate([
+        raw(engine="zap", cls="missing_security_header", sev="low", url="http://h:8080/health", param="X-Content-Type-Options"),
+        raw(engine="zap", cls="missing_security_header", sev="low", url="http://h:8080/bookings/Q7X2KD"),
+        raw(engine="nuclei", cls="missing_security_header", sev="low", url="http://h:8080/health"),
+        raw(engine="api_checks", cls="missing_security_header", sev="low", url="http://h:8080/"),
+        raw(engine="zap", cls="version_disclosure", sev="low", url="http://h:8080/robots.txt"),
+        raw(engine="zap", cls="version_disclosure", sev="low", url="http://h:8080/me"),
+    ])
+    by = {f.vuln_class: f for f in findings}
+    assert len(findings) == 2
+    hdr = by["missing_security_header"]
+    assert hdr.url_template == "h:8080/*" and hdr.sources == ["api_checks", "nuclei", "zap"] and hdr.confidence == "high"
+    assert by["version_disclosure"].members == 2
+
+
+def test_path_level_classes_still_split_by_endpoint():
+    assert len(correlate([raw(url="http://h/bookings/Q7X2KD"), raw(url="http://h/me")])) == 2
+
+
+def test_authz_and_nuclei_views_of_unauth_access_merge():
+    from app.engines.nuclei_adapter import record_to_finding
+
+    authz = raw(engine="authz", cls="broken_auth", sev="critical", conf="high", url="http://h:8080/bookings/Q7X2KD",
+                extra={"requires_auth": True})
+    nuclei = record_to_finding({"template-id": "aeroscan-booking-lookup-unauthenticated", "matched-at": "http://h:8080/bookings/M3PA9Z",
+                                "info": {"severity": "high", "tags": ["auth-bypass", "airline"]}})
+    (m,) = correlate([authz, nuclei])
+    assert m.sources == ["authz", "nuclei"] and m.severity == "critical"

@@ -101,6 +101,8 @@ CONTROLS: dict[str, Control] = {
                                     "Harden configuration from a documented baseline and check drift."),
     "loose_cookie": _c(["API8"], ["A05", "A07"], ["2.2.1", "6.2.4"], ["10"],
                        "Mark session cookies Secure, HttpOnly and SameSite."),
+    "version_disclosure": _c(["API8"], ["A05"], ["2.2.1"], ["10"],
+                             "Remove or genericise Server and X-Powered-By headers so software versions aren't advertised."),
     "info_disclosure": _c(["API8"], ["A05"], ["2.2.1", "6.2.4"], ["10"],
                           "Strip version banners, stack traces and debug output from responses."),
     "pii_disclosure": _c(["API3"], ["A01", "A02"], ["3.4.1", "7.2.2"], ["10", "9"],

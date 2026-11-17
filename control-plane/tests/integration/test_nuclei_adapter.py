@@ -71,7 +71,7 @@ def test_parse_maps_fields():
     f = parse_jsonl("[INF] banner line\n" + json.dumps(HIT) + "\n{broken json\n\n")
     assert len(f) == 1
     f = f[0]
-    assert (f.engine, f.vuln_class, f.severity, f.cwe, f.confidence) == ("nuclei", "info_disclosure", "low", 200, "high")
+    assert (f.engine, f.vuln_class, f.severity, f.cwe, f.confidence) == ("nuclei", "api_inventory_exposure", "low", 200, "high")
     assert f.url.endswith("/openapi.json") and f.evidence == "3.1.0"
 
 
@@ -105,3 +105,22 @@ def test_real_subprocess_runner():
 def test_bundled_templates_present():
     names = {p.name for p in DEFAULT_TEMPLATES.glob("*.yaml")}
     assert {"openapi-schema-exposed.yaml", "missing-security-headers.yaml", "booking-lookup-unauthenticated.yaml"} <= names
+
+
+def test_pnr_variable_borrowed_from_first_identity():
+    r = FakeRunner(out="")
+    ctx = ScanContext(job_id="j", base_url=CTX.base_url, identities=[{"label": "a", "objects": ["Q7X2KD"], "markers": ["m"]}])
+    adapter(r).run(None, None, ctx)
+    assert r.argv[r.argv.index("-var") + 1] == "pnr=Q7X2KD"
+
+
+def test_explicit_pnr_variable_wins():
+    r = FakeRunner(out="")
+    ctx = ScanContext(job_id="j", base_url=CTX.base_url, identities=[{"label": "a", "objects": ["Q7X2KD"], "markers": ["m"]}])
+    adapter(r, variables={"pnr": "ABC123"}).run(None, None, ctx)
+    assert r.argv[r.argv.index("-var") + 1] == "pnr=ABC123"
+
+
+def test_openapi_template_classified_as_inventory():
+    f = record_to_finding({"template-id": "x", "info": {"tags": ["exposure", "openapi"]}})
+    assert f.vuln_class == "api_inventory_exposure"

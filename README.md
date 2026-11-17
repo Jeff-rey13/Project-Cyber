@@ -17,6 +17,16 @@ make scan         # full scan of the lab with all engines
 Dashboard: <http://127.0.0.1:8000/dashboard/> (operator token is `AEROSCAN_OPERATOR_TOKEN` in `.env`).
 Lab API docs: <http://127.0.0.1:8080/docs>. Everything binds to loopback only.
 
+No `make` (e.g. Windows)? The targets are thin wrappers:
+
+```bash
+python scripts/init_env.py && docker compose up -d --build
+docker compose exec -T api python -m app.cli try-unverified http://example.com
+docker compose exec -T nimbus-air python -m app.identities | docker compose exec -T api python -m app.cli scan --identities - --engines authz,api_checks,zap,nuclei
+```
+
+Restart the whole stack (`docker compose up -d --force-recreate`), not just the worker: the lab lives in the worker's network namespace and loses its network if the worker is recreated alone. The CLI prints `WARNING engine failed` and exits non-zero if that happens.
+
 No Docker? The test suite runs the same story in-process:
 
 ```bash
@@ -26,17 +36,20 @@ make test
 
 ## What a scan of the lab finds
 
-| # | Finding | Severity | Risk (0–20) | OWASP | PCI DSS v4.0 |
-|---|---|---|---|---|---|
-| 1 | Booking lookup needs no authentication | critical | 17.7 | API2:2023 | 8.3.1 |
-| 2 | BOLA: passengers can read each other's bookings | high | 14.6 | API1:2023 | 7.2.1 |
-| 3 | Loyalty tier writable via contact update | high | 13.6 | API3:2023 | 7.2.2 |
-| 4 | Itinerary lookup returns passport, DOB, card | medium | 10.3 | API3:2023 | 3.4.1 |
-| 5 | No rate limit on booking lookup | medium | 6.9 | API4:2023 | 8.3.4 |
-| 6 | OpenAPI schema public | low | 3.1 | API9:2023 | 12.5.1 |
-| 7 | Security headers missing | low | 3.1 | API8:2023 | 2.2.1 |
+Real output of `make scan` (all four engines, Docker stack, insecure lab). Eight correlated findings; three are confirmed by more than one engine.
 
-With `NIMBUS_SECURE_MODE=true`, 1–5 disappear (posture score 31 → 94).
+| # | Finding | Severity | Risk (0–20) | Engines | OWASP | PCI DSS v4.0 |
+|---|---|---|---|---|---|---|
+| 1 | Booking lookup needs no authentication | critical | 17.7 | authz, nuclei | API2:2023 | 8.3.1 |
+| 2 | BOLA: passengers can read each other's bookings | high | 14.6 | authz | API1:2023 | 7.2.1 |
+| 3 | Loyalty tier writable via contact update | high | 13.6 | api_checks | API3:2023 | 7.2.2 |
+| 4 | Itinerary lookup returns passport, DOB, card | medium | 10.3 | api_checks | API3:2023 | 3.4.1 |
+| 5 | No rate limit on booking lookup | medium | 6.9 | api_checks | API4:2023 | 8.3.4 |
+| 6 | OpenAPI schema public | low | 3.1 | api_checks, nuclei | API9:2023 | 12.5.1 |
+| 7 | Security headers missing (site-wide) | low | 3.1 | api_checks, zap | API8:2023 | 2.2.1 |
+| 8 | Server version disclosed (site-wide) | low | 3.1 | zap | API8:2023 | 2.2.1 |
+
+With `NIMBUS_SECURE_MODE=true`, 1–5 disappear.
 
 ## How the safety works
 

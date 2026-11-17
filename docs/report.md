@@ -52,7 +52,8 @@ during development (encoded backslash, ideographic full stop), both fixed.*
 - Fingerprint = class + URL template + param, so 1000 PNRs collapse to one finding
 - Multi-engine agreement raises confidence
 - Risk = CVSS × context (auth 1.3, PII 1.5, state-changing 1.4, cap 2×)
-- Lab result: 7 findings, ranked 17.7 → 3.1
+- Lab result (4 engines, Docker): 8 findings ranked 17.7 → 3.1; 3 confirmed by two engines each
+- Live correlation fixes found only on the real stack: site-wide header issues now collapse per host
 
 ## 7. Do-no-harm throttle
 

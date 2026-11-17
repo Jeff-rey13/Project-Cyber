@@ -26,6 +26,8 @@ _PII = [
     re.compile(r"passport|date_of_birth|\bdob\b|card_masked", re.I),
 ]
 PII_CLASSES = {"bola", "pii_disclosure", "excessive_data_exposure"}
+# properties of the server's responses as a whole: one finding per host, not one per url zap happened to crawl
+SITE_WIDE_CLASSES = {"missing_security_header", "version_disclosure", "loose_cookie"}
 
 
 def _is_dynamic(segment: str) -> bool:
@@ -55,8 +57,18 @@ def url_template(url: str) -> str:
     return host + path + ("?" + "&".join(keys) if keys else "")
 
 
+def site_template(url: str) -> str:
+    return url_template(url).split("/", 1)[0] + "/*"
+
+
+def finding_template(f: RawFinding) -> str:
+    return site_template(f.url) if f.vuln_class in SITE_WIDE_CLASSES else url_template(f.url)
+
+
 def fingerprint(f: RawFinding) -> str:
-    return hashlib.sha256(f"{f.vuln_class}|{url_template(f.url)}|{f.param or ''}".encode()).hexdigest()
+    # site-wide classes drop the param too: engines name the same missing header differently
+    param = "" if f.vuln_class in SITE_WIDE_CLASSES else (f.param or "")
+    return hashlib.sha256(f"{f.vuln_class}|{finding_template(f)}|{param}".encode()).hexdigest()
 
 
 @dataclass
@@ -104,7 +116,7 @@ def _merge(group: list[RawFinding]) -> MergedFinding:
         vuln_class=lead.vuln_class,
         title=lead.title,
         description=lead.description,
-        url_template=url_template(lead.url),
+        url_template=finding_template(lead),
         param=lead.param,
         method=lead.method,
         severity=severity,

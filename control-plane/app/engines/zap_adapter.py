@@ -26,7 +26,8 @@ PLUGIN_CLASS = {
     "40012": "xss", "40014": "xss", "40018": "sqli", "40019": "sqli", "90019": "ssi",
     "10202": "csrf", "10038": "missing_security_header", "10021": "missing_security_header",
     "10020": "missing_security_header", "10035": "missing_security_header", "10096": "info_disclosure",
-    "10062": "pii_disclosure", "90022": "info_disclosure", "6": "path_traversal", "7": "rfi", "90033": "loose_cookie",
+    "10062": "pii_disclosure", "90022": "info_disclosure", "10036": "version_disclosure", "10037": "version_disclosure",
+    "6": "path_traversal", "7": "rfi", "90033": "loose_cookie",
 }
 
 
@@ -42,6 +43,8 @@ class ZapConfig:
     spider_max_minutes: int = 5
     ascan_max_minutes: int = 20
     poll_seconds: float = 2.0
+    # informational alerts (user-agent fuzzer, content-type notes) are one-per-url noise
+    include_info: bool = False
 
 
 class ZapAdapter:
@@ -57,13 +60,14 @@ class ZapAdapter:
 
     # --- zap api plumbing ---
 
-    def _call(self, component: str, kind: str, name: str, **params: Any) -> dict:
-        r = self._api.get(f"/JSON/{component}/{kind}/{name}/", params={**params, "apikey": self.cfg.api_key})
+    def _call(self, component: str, kind: str, endpoint: str, /, **params: Any) -> dict:
+        # positional-only: zap's own query params include "name", which must not collide with ours
+        r = self._api.get(f"/JSON/{component}/{kind}/{endpoint}/", params={**params, "apikey": self.cfg.api_key})
         if r.status_code != 200:
-            raise ZapError(f"zap {component}.{name} -> http {r.status_code}")
+            raise ZapError(f"zap {component}.{endpoint} -> http {r.status_code}")
         body = r.json()
         if isinstance(body, dict) and body.get("code") and body.get("message"):
-            raise ZapError(f"zap {component}.{name}: {body['message']}")
+            raise ZapError(f"zap {component}.{endpoint}: {body['message']}")
         return body
 
     def _wait(self, component: str, scan_id: str, max_minutes: int) -> None:
@@ -87,6 +91,8 @@ class ZapAdapter:
     # --- engine contract ---
 
     def run(self, client: httpx.Client, scope: ScopeSnapshot, ctx: ScanContext) -> list[RawFinding]:
+        # zap keeps its site tree and alerts between scans; without a fresh session old results leak in
+        self._call("core", "action", "newSession", name="", overwrite="true")
         self.configure_upstream()
         seeds = build_seed_set(client, ctx.base_url, scope, self._key) if self._key else []
         for s in seeds:
@@ -106,7 +112,8 @@ class ZapAdapter:
         start = 0
         while True:
             alerts = self._call("core", "view", "alerts", baseurl=base_url, start=str(start), count=str(page)).get("alerts", [])
-            findings += [alert_to_finding(a) for a in alerts]
+            mapped = [alert_to_finding(a) for a in alerts]
+            findings += [f for f in mapped if self.cfg.include_info or f.severity != "info"]
             if len(alerts) < page:
                 return findings
             start += page

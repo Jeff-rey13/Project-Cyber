@@ -17,9 +17,8 @@ identities:
 refuse-demo:
 	docker compose exec -T api python -m app.cli try-unverified http://example.com
 
-scan: identities
-	docker compose cp identities.json api:/tmp/identities.json
-	docker compose exec -T api python -m app.cli scan --identities /tmp/identities.json --engines $(ENGINES)
+scan:
+	docker compose exec -T nimbus-air python -m app.identities | docker compose exec -T api python -m app.cli scan --identities - --engines $(ENGINES)
 
 test: test-lab test-cp
 

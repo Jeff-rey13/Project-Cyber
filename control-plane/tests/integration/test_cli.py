@@ -72,3 +72,19 @@ def test_missing_token_exits(monkeypatch):
     monkeypatch.delenv("AEROSCAN_OPERATOR_TOKEN", raising=False)
     with pytest.raises(SystemExit):
         cli._client()
+
+
+def test_partial_scan_is_flagged(api, tmp_path, capsys):
+    api.post("/targets/127.0.0.1/self-verify")
+    # nothing listening on this port, so every engine request fails
+    assert cli.main(["scan", "--base-url", "http://127.0.0.1:9", "--engines", "authz,api_checks"]) == 2
+    assert "WARNING engine failed" in capsys.readouterr().out
+
+
+def test_identities_from_stdin(api, monkeypatch, capsys):
+    import io
+
+    monkeypatch.setattr(cli.sys, "stdin", io.StringIO('{"identities": []}'))
+    api.post("/targets/127.0.0.1/self-verify")
+    cli.main(["scan", "--base-url", "http://127.0.0.1:9", "--identities", "-", "--engines", "authz"])
+    assert "created" in capsys.readouterr().out

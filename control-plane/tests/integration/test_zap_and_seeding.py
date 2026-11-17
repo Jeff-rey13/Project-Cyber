@@ -147,8 +147,8 @@ def test_zap_run_sequence_and_mapping():
         findings = zap(fake).run(c, snap, ScanContext(job_id="j", base_url="http://127.0.0.1:8080"))
 
     names = [n for n, _ in fake.calls]
-    assert names[:2] == ["network.setHttpProxy", "network.setHttpProxyEnabled"]
-    assert fake.calls[0][1]["host"] == "aeroscan-gate" and fake.calls[0][1]["port"] == "8899"
+    assert names[:3] == ["core.newSession", "network.setHttpProxy", "network.setHttpProxyEnabled"]
+    assert fake.calls[1][1]["host"] == "aeroscan-gate" and fake.calls[1][1]["port"] == "8899"
     accessed = [q["url"] for n, q in fake.calls if n == "core.accessUrl"]
     assert "http://127.0.0.1:8080/admin/purge" not in accessed and f"http://127.0.0.1:8080/bookings/{PLACEHOLDER}" in accessed
     assert names.index("spider.scan") < names.index("ascan.scan") < names.index("core.alerts")
@@ -158,6 +158,13 @@ def test_zap_run_sequence_and_mapping():
     assert by_class["missing_security_header"].cwe == 693
     # adapter itself only ever talked to the target to fetch openapi
     assert sent == [("GET", "http://127.0.0.1:8080/openapi.json")]
+
+
+def test_info_alerts_dropped_unless_asked():
+    alerts = [{"pluginId": "10104", "alert": "User Agent Fuzzer", "risk": "Informational", "url": "http://127.0.0.1/"},
+              {"pluginId": "10038", "alert": "CSP", "risk": "Medium", "url": "http://127.0.0.1/"}]
+    assert [f.title for f in zap(FakeZap(alerts=alerts)).collect_alerts("http://127.0.0.1")] == ["CSP"]
+    assert len(zap(FakeZap(alerts=alerts), include_info=True).collect_alerts("http://127.0.0.1")) == 2
 
 
 def test_zap_alert_paging():
