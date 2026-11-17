@@ -1,6 +1,6 @@
 """Request/response shapes. The response models are the data-exposure boundary."""
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -49,3 +49,16 @@ class BookingOut(BaseModel):
     checked_in: bool
     bags: int
 
+
+class BookingFullOut(BookingOut):
+    """Insecure-mode booking shape. Ships the whole passenger record (excessive data exposure)."""
+
+    customer_id: int
+    passenger_name: str
+    passenger_dob: date
+    passport_no: str
+    phone: str
+    email: str
+    card_masked: str
+    total_amount: float
+    currency: str

@@ -1,9 +1,19 @@
-# skeleton only; services get build contexts as each module lands (see PRD section 13)
+# services get added as each module lands (see PRD section 13)
 services:
   redis:
     image: redis:7-alpine
 
-  # nimbus-air:      # step 2-4
+  nimbus-air:
+    build: ./target-plane/nimbus-air
+    environment:
+      NIMBUS_SECURE_MODE: ${NIMBUS_SECURE_MODE:-false}
+      NIMBUS_SEED: ${NIMBUS_SEED:-1337}
+      # db lives inside the container on purpose; a fresh `up` means a fresh, identical seed
+      NIMBUS_DATABASE_URL: sqlite:////tmp/nimbus.db
+    # loopback only. the lab is deliberately vulnerable and must not face the network.
+    ports:
+      - "127.0.0.1:8080:8080"
+
   # control-plane:   # step 5+
   # worker:          # step 7
   # zap:             # step 8, isolated network

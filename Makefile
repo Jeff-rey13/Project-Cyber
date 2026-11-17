@@ -1,10 +1,14 @@
+PY ?= .venv/Scripts/python
+
 up:
-	docker compose up -d
+	docker compose up -d --build
 
 down:
 	docker compose down
 
-test:
-	@echo "no tests yet"
+test: test-lab
 
-.PHONY: up down test
+test-lab:
+	cd target-plane/nimbus-air && ../../$(PY) -m pytest -q tests
+
+.PHONY: up down test test-lab
