@@ -74,7 +74,7 @@ CONTROLS: dict[str, Control] = {
     "bola": _c(["API1"], ["A01"], ["7.2.1", "7.2.2", "6.2.4"], ["8", "10"],
                "Check that the caller owns the object on every request, server-side, before loading it. "
                "Answer 404 for 'not yours' so the endpoint isn't an existence oracle."),
-    "broken_auth": _c(["API2"], ["A07"], ["8.2.1", "8.3.1", "6.2.4"], ["8", "13"],
+    "broken_auth": _c(["API2"], ["A07"], ["8.3.1", "8.2.1", "6.2.4"], ["8", "13"],
                       "Require a verified, signed, unexpired credential on every non-public endpoint; never treat a "
                       "record locator or other guessable value as proof of identity."),
     "excessive_data_exposure": _c(["API3"], ["A01", "A04"], ["3.4.1", "7.2.2", "6.2.4"], ["10"],

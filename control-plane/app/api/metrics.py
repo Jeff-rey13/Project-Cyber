@@ -11,9 +11,9 @@ from ..findings.store import Finding, findings_for
 from ..orchestrator.state import ScanJob, ScanState
 from ..scope.models import AuditEntry
 
-# a total risk of this much or more reads as posture 0. tuned so one critical bola + a handful of
-# lows lands mid-scale rather than pinning the gauge at zero.
-POSTURE_RISK_BUDGET = 60.0
+# summed risk (each finding 0..20) at which posture reads 0. tuned on the bundled lab: the broken
+# build lands around 30, the fixed build in the 90s, so the gauge moves visibly between them.
+POSTURE_RISK_BUDGET = 100.0
 
 
 def posture_score(findings: list[Finding]) -> int:

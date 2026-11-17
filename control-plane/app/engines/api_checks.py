@@ -146,7 +146,7 @@ class ApiChecksEngine:
             url=url, severity="medium", confidence="medium", cwe=770,
             description=f"{BURST} back-to-back lookups were all served with no 429 or rate-limit headers; "
                         "combined with guessable record locators this enables enumeration",
-            evidence=f"statuses: {sorted(set(codes))}", extra={"template": template, "burst": BURST},
+            evidence=f"statuses: {sorted(set(codes))}", extra={"template": template, "burst": BURST, "requires_auth": True},
         )]
 
     def check_mass_assignment(self, client, base, auth) -> list[RawFinding]:

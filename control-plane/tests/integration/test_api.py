@@ -134,7 +134,7 @@ def test_posture_score_bounds():
             self.risk_score = r
 
     assert posture_score([]) == 100
-    assert posture_score([F(30)]) == 50
+    assert posture_score([F(30)]) == 70
     assert posture_score([F(10)] * 20) == 0
 
 
