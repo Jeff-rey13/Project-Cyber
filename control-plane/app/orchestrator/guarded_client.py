@@ -16,6 +16,7 @@ import httpx
 
 from ..scope.gate import Decision, authorize_request
 from ..scope.snapshot import ScopeSnapshot
+from .throttle import AdaptiveThrottle, ThrottleTransport
 
 
 class ScopeViolation(httpx.RequestError):
@@ -93,12 +94,15 @@ def guarded_client(
     clock: Optional[Callable[[], datetime]] = None,
     timeout: float = 10.0,
     follow_redirects: bool = False,
+    throttle: Optional[AdaptiveThrottle] = None,
 ) -> httpx.Client:
     # refuse up front rather than build a client that will deny every request anyway
     if not snapshot.is_sealed_with(key):
         raise ValueError("refusing to build a client from an unsealed scope snapshot")
+    # gate -> throttle -> wire. the throttle is not optional; callers can only pick a gentler one.
+    paced = ThrottleTransport(inner_transport or httpx.HTTPTransport(retries=0), throttle or AdaptiveThrottle())
     transport = GateTransport(
-        inner_transport or httpx.HTTPTransport(retries=0),
+        paced,
         snapshot,
         key,
         stats or GateStats(),

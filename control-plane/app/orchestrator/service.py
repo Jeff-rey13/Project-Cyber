@@ -17,6 +17,7 @@ from ..scope.snapshot import ScopeDefinition, ScopeSnapshot, capture_snapshot
 from ..scope.verification import is_verified
 from .guarded_client import GateStats, guarded_client
 from .state import ScanJob, ScanState, transition
+from .throttle import AdaptiveThrottle, ThrottleConfig
 
 # hard ceiling, deliberately not configurable (PRD 3.3)
 HARD_MAX_ENGINE_CONCURRENCY = 4
@@ -24,6 +25,12 @@ HARD_MAX_ENGINE_CONCURRENCY = 4
 
 class ScanRefused(Exception):
     pass
+
+
+def throttle_config_from(raw: Optional[dict]) -> ThrottleConfig:
+    # ignore unknown keys; ThrottleConfig.clamped() then enforces the hard ceilings
+    known = ThrottleConfig.__dataclass_fields__
+    return ThrottleConfig(**{k: v for k, v in (raw or {}).items() if k in known and isinstance(v, (int, float))})
 
 
 def _all_verified(session: Session, hosts: list[str]) -> bool:
@@ -101,6 +108,7 @@ def execute_scan(
     inner_transport: Optional[httpx.BaseTransport] = None,
     clock: Optional[Callable[[], datetime]] = None,
     stats: Optional[GateStats] = None,
+    throttle: Optional[AdaptiveThrottle] = None,
 ) -> ScanJob:
     job = session.get(ScanJob, job_id)
     if job is None:
@@ -115,12 +123,13 @@ def execute_scan(
 
     job = transition(session, job, ScanState.RUNNING, actor, "worker picked up")
     stats = stats or GateStats()
+    throttle = throttle or AdaptiveThrottle(throttle_config_from(job.options.get("throttle_config")))
     ctx = ScanContext(job_id=job.id, base_url=job.base_url, identities=job.options.get("identities", []), options=job.options)
 
     findings: list[RawFinding] = []
     errors: list[str] = []
     try:
-        client = guarded_client(snapshot, key, stats=stats, inner_transport=inner_transport, clock=clock)
+        client = guarded_client(snapshot, key, stats=stats, inner_transport=inner_transport, clock=clock, throttle=throttle)
         with client, ThreadPoolExecutor(max_workers=min(len(job.engines), HARD_MAX_ENGINE_CONCURRENCY)) as pool:
             futures = {pool.submit(registry[name]().run, client, snapshot, ctx): name for name in job.engines}
             for fut in as_completed(futures):
@@ -133,9 +142,13 @@ def execute_scan(
         return transition(session, job, ScanState.FAILED, actor, f"runner error: {type(exc).__name__}: {exc}")
 
     save_raw(session, job.id, findings)
-    job.options = {**job.options, "gate_stats": stats.as_dict(), "engine_errors": errors}
+    job.options = {**job.options, "gate_stats": stats.as_dict(), "engine_errors": errors, "throttle": throttle.snapshot()}
     session.add(job)
     session.commit()
+
+    if throttle.abort_reason:
+        # keep what we found before backing off, but make it obvious the scan didn't finish
+        return transition(session, job, ScanState.ABORTED, actor, throttle.abort_reason)
 
     if errors and len(errors) == len(job.engines):
         return transition(session, job, ScanState.FAILED, actor, "; ".join(errors))

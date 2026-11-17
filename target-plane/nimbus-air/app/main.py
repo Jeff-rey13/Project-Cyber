@@ -11,6 +11,7 @@ behaviour can be shown side by side. Search for "VULN-" to find them all:
   VULN-5  no rate limiting on booking lookup      (pnr enumeration)
 """
 
+import asyncio
 from collections.abc import Iterator
 from typing import Optional, Union
 
@@ -51,6 +52,13 @@ def create_app(settings: Optional[Settings] = None, engine=None) -> FastAPI:
     app.state.settings = settings
     app.state.engine = engine
     app.state.lookup_limiter = FixedWindowLimiter(settings.lookup_limit, settings.lookup_window_seconds)
+
+    if settings.inject_latency_ms > 0:
+        # simulates a struggling backend so the scanner's throttle has something to react to
+        @app.middleware("http")
+        async def slow_down(request: Request, call_next):
+            await asyncio.sleep(settings.inject_latency_ms / 1000)
+            return await call_next(request)
 
     def get_session() -> Iterator[Session]:
         with Session(engine) as s:

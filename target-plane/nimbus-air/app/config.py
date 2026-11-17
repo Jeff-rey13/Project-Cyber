@@ -22,6 +22,8 @@ class Settings:
     # booking lookups per client per window, only enforced in secure mode
     lookup_limit: int = 20
     lookup_window_seconds: int = 60
+    # test hook for the scanner's do-no-harm throttle: every response is delayed by this much
+    inject_latency_ms: int = 0
 
 
 def load_settings() -> Settings:
@@ -30,4 +32,5 @@ def load_settings() -> Settings:
         seed=int(os.getenv("NIMBUS_SEED", "1337")),
         database_url=os.getenv("NIMBUS_DATABASE_URL", "sqlite:///./nimbus.db"),
         token_secret=os.getenv("NIMBUS_TOKEN_SECRET", "nimbus-lab-only-secret"),
+        inject_latency_ms=int(os.getenv("NIMBUS_INJECT_LATENCY_MS", "0")),
     )
