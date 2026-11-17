@@ -38,6 +38,9 @@ def canonical_domain(raw: str) -> str:
 
     if any(c in host for c in "/:@?#\\ %\t\r\n\x00"):
         raise InvalidDomain("not a bare hostname")
+    # idna quietly maps these to "." - refuse rather than let two spellings name one host
+    if any(c in host for c in "。．｡"):
+        raise InvalidDomain("non-ascii label separator")
 
     try:
         return str(ipaddress.IPv4Address(host))
