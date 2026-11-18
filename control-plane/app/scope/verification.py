@@ -1,8 +1,8 @@
 """Proof-of-control for scan targets (PRD 5.1).
 
 A domain only ever becomes VERIFIED here. Three ways in:
-  - dns txt:      operator publishes a random token at _aeroscan-challenge.<domain>
-  - hosted file:  operator serves the token at /.well-known/aeroscan-challenge.txt
+  - dns txt:      operator publishes a random token at _squawk-challenge.<domain>
+  - hosted file:  operator serves the token at /.well-known/squawk-challenge.txt
   - loopback:     literal loopback hosts only, for the bundled lab
 """
 
@@ -18,8 +18,8 @@ from . import audit
 from .domains import canonical_domain, is_loopback
 from .models import Verification, VerificationMethod, VerificationStatus, utcnow
 
-CHALLENGE_LABEL = "_aeroscan-challenge"
-WELL_KNOWN_PATH = "/.well-known/aeroscan-challenge.txt"
+CHALLENGE_LABEL = "_squawk-challenge"
+WELL_KNOWN_PATH = "/.well-known/squawk-challenge.txt"
 TOKEN_TTL = timedelta(hours=24)
 
 TxtLookup = Callable[[str], list[str]]
@@ -49,7 +49,7 @@ def dns_txt_lookup(name: str) -> list[str]:
 def http_file_fetch(url: str) -> Optional[str]:
     import httpx
 
-    # one fixed path, no redirects, tiny timeout. this is the only request aeroscan ever sends to an
+    # one fixed path, no redirects, tiny timeout. this is the only request squawk ever sends to an
     # unverified host, and it's the same thing any acme client does.
     try:
         r = httpx.get(url, timeout=5.0, follow_redirects=False)

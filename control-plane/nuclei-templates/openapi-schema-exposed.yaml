@@ -1,8 +1,8 @@
-id: aeroscan-openapi-schema-exposed
+id: squawk-openapi-schema-exposed
 
 info:
   name: OpenAPI schema publicly exposed
-  author: aeroscan
+  author: squawk
   severity: low
   description: The full API inventory is served unauthenticated, which hands an attacker every endpoint and parameter name.
   tags: exposure,openapi,api

@@ -1,4 +1,4 @@
-"""Print the seeded test identities as AeroScan scan options.
+"""Print the seeded test identities as Squawk scan options.
 
     docker compose exec nimbus-air python -m app.identities > identities.json
 

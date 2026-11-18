@@ -89,7 +89,7 @@ export const options = {{
 const URLS = {json.dumps(urls)};
 
 export default function () {{
-  http.get(URLS[Math.floor(Math.random() * URLS.length)], {{ tags: {{ aeroscan: 'perf' }} }});
+  http.get(URLS[Math.floor(Math.random() * URLS.length)], {{ tags: {{ squawk: 'perf' }} }});
 }}
 """
 
@@ -139,7 +139,7 @@ def run_perf(
         raise PerfRefused("none of the requested urls are in scope")
 
     p = clamp(profile)
-    with tempfile.TemporaryDirectory(prefix="aeroscan-k6-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="squawk-k6-") as tmp:
         script = Path(tmp) / "scoped.js"
         summary_path = Path(tmp) / "summary.json"
         script.write_text(render_script(allowed, p), encoding="utf-8")

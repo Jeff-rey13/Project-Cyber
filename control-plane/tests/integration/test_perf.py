@@ -62,7 +62,7 @@ class FakeK6:
 
 def go(session, runner, **kw):
     args = dict(actor="op", base_url=BASE, paths=["/health", "/openapi.json", "/admin/x"], snapshot=sealed(),
-                key=KEY, proxy_url="http://aeroscan-gate:8899", runner=runner)
+                key=KEY, proxy_url="http://squawk-gate:8899", runner=runner)
     args.update(kw)
     return run_perf(session, **args)
 
@@ -98,7 +98,7 @@ def test_happy_path_scoped_and_capped(session, monkeypatch):
     assert "/admin" not in k6.script
     assert f"rate: {int(HARD_MAX_RPS)}," in k6.script and f"maxVUs: {HARD_MAX_CONCURRENCY}" in k6.script
     assert f"duration: '{MAX_DURATION_S}s'" in k6.script and "abortOnFail: true" in k6.script
-    assert k6.env["HTTP_PROXY"] == "http://aeroscan-gate:8899" and "HTTPS_PROXY" not in k6.env
+    assert k6.env["HTTP_PROXY"] == "http://squawk-gate:8899" and "HTTPS_PROXY" not in k6.env
     assert r["latency_ms"] == {"avg": 12.3, "p50": 10.0, "p90": 20.0, "p95": 25.6, "max": 80.0}
     assert r["requests"] == 80 and r["error_rate"] == 0.0125 and not r["aborted_by_threshold"]
     actions = [e.action for e in session.exec(select(AuditEntry).order_by(AuditEntry.id))]

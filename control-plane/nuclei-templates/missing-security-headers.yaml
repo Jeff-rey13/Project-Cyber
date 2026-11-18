@@ -1,8 +1,8 @@
-id: aeroscan-missing-security-headers
+id: squawk-missing-security-headers
 
 info:
   name: Baseline security headers missing
-  author: aeroscan
+  author: squawk
   severity: low
   description: Responses lack Strict-Transport-Security and X-Content-Type-Options.
   tags: misconfig,headers

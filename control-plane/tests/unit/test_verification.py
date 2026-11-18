@@ -32,7 +32,7 @@ def no_dns(name):
 def test_begin_returns_instruction_with_fresh_random_token(session):
     v1, instr = begin_verification(session, "Nimbus.Test", OP)
     v2, _ = begin_verification(session, "nimbus.test", OP)
-    assert instr == f"_aeroscan-challenge.nimbus.test TXT = {v1.token}"
+    assert instr == f"_squawk-challenge.nimbus.test TXT = {v1.token}"
     assert len(v1.token) == 64 and v1.token != v2.token
     session.refresh(v1)
     assert v1.status == VerificationStatus.EXPIRED  # retired by the second begin
@@ -40,7 +40,7 @@ def test_begin_returns_instruction_with_fresh_random_token(session):
 
 def test_dns_pass_marks_verified_and_keeps_proof(session):
     v, _ = begin_verification(session, "nimbus.test", OP)
-    dns = {"_aeroscan-challenge.nimbus.test": ["unrelated", v.token]}
+    dns = {"_squawk-challenge.nimbus.test": ["unrelated", v.token]}
     assert check_verification(session, "nimbus.test", OP, txt_lookup=publish(dns))
     rec = verified_record(session, "nimbus.test")
     assert rec.proof["observed"] == ["unrelated", v.token]
@@ -50,20 +50,20 @@ def test_dns_pass_marks_verified_and_keeps_proof(session):
 
 def test_wrong_token_fails(session):
     begin_verification(session, "nimbus.test", OP)
-    dns = {"_aeroscan-challenge.nimbus.test": ["0" * 64]}
+    dns = {"_squawk-challenge.nimbus.test": ["0" * 64]}
     assert not check_verification(session, "nimbus.test", OP, txt_lookup=publish(dns))
     assert not is_verified(session, "nimbus.test")
 
 
 def test_token_on_wrong_record_name_fails(session):
     v, _ = begin_verification(session, "nimbus.test", OP)
-    dns = {"_aeroscan-challenge.other.test": [v.token], "nimbus.test": [v.token]}
+    dns = {"_squawk-challenge.other.test": [v.token], "nimbus.test": [v.token]}
     assert not check_verification(session, "nimbus.test", OP, txt_lookup=publish(dns))
 
 
 def test_token_is_single_use(session):
     v, _ = begin_verification(session, "nimbus.test", OP)
-    dns = {"_aeroscan-challenge.nimbus.test": [v.token]}
+    dns = {"_squawk-challenge.nimbus.test": [v.token]}
     assert check_verification(session, "nimbus.test", OP, txt_lookup=publish(dns))
     # no pending challenge left, so a replay fails rather than re-verifying
     assert not check_verification(session, "nimbus.test", OP, txt_lookup=publish(dns))
@@ -72,14 +72,14 @@ def test_token_is_single_use(session):
 def test_old_token_dead_after_reissue(session):
     old, _ = begin_verification(session, "nimbus.test", OP)
     begin_verification(session, "nimbus.test", OP)
-    dns = {"_aeroscan-challenge.nimbus.test": [old.token]}
+    dns = {"_squawk-challenge.nimbus.test": [old.token]}
     assert not check_verification(session, "nimbus.test", OP, txt_lookup=publish(dns))
 
 
 def test_expired_challenge_fails(session):
     start = utcnow()
     v, _ = begin_verification(session, "nimbus.test", OP, now=start)
-    dns = {"_aeroscan-challenge.nimbus.test": [v.token]}
+    dns = {"_squawk-challenge.nimbus.test": [v.token]}
     later = start + TOKEN_TTL + timedelta(seconds=1)
     assert not check_verification(session, "nimbus.test", OP, txt_lookup=publish(dns), now=later)
     session.refresh(v)
@@ -93,13 +93,13 @@ def test_check_without_begin_fails(session):
 def test_token_for_one_domain_does_not_verify_another(session):
     a, _ = begin_verification(session, "a.test", OP)
     begin_verification(session, "b.test", OP)
-    dns = {"_aeroscan-challenge.b.test": [a.token]}
+    dns = {"_squawk-challenge.b.test": [a.token]}
     assert not check_verification(session, "b.test", OP, txt_lookup=publish(dns))
 
 
 def test_hosted_file_method(session):
     v, instr = begin_verification(session, "nimbus.test", OP, method=VerificationMethod.HOSTED_FILE)
-    assert "/.well-known/aeroscan-challenge.txt" in instr
+    assert "/.well-known/squawk-challenge.txt" in instr
     seen = []
 
     def fetch(url):
@@ -107,7 +107,7 @@ def test_hosted_file_method(session):
         return v.token + "\n"
 
     assert check_verification(session, "nimbus.test", OP, txt_lookup=no_dns, file_fetch=fetch)
-    assert seen == ["http://nimbus.test/.well-known/aeroscan-challenge.txt"]
+    assert seen == ["http://nimbus.test/.well-known/squawk-challenge.txt"]
 
 
 def test_hosted_file_missing(session):

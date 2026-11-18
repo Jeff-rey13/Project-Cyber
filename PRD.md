@@ -1,4 +1,4 @@
-# Product Requirements Document — AeroScan: Authorization-Gated Aviation Security Scanner
+# Product Requirements Document — Squawk: Authorization-Gated Aviation Security Scanner
 
 **Author:** [Your Full Name]
 **Contact:** [your email]
@@ -14,7 +14,7 @@ This is the single source of truth. Build strictly in the order given in **Secti
 
 Four hard rules that bind every line of code, every commit, every document:
 
-1. **Authorization is the product, not a feature.** AeroScan must be structurally incapable of sending a single packet to a host that has not passed ownership verification. This is enforced in code at the request boundary with a default-deny gate (Section 5.1). There is no configuration, flag, or code path that bypasses it. A reviewer will try to break this; it must not break.
+1. **Authorization is the product, not a feature.** Squawk must be structurally incapable of sending a single packet to a host that has not passed ownership verification. This is enforced in code at the request boundary with a default-deny gate (Section 5.1). There is no configuration, flag, or code path that bypasses it. A reviewer will try to break this; it must not break.
 2. **Everything that imitates a real airline is fictional.** The only scan target in this project is the bundled, author-owned **Nimbus Air** lab. Real-company material (Scoot, SIA, aviation CVEs) appears only inside written research documents as case studies — never as a cloned site, a live target, or a submitted URL.
 3. **Authorship is the repository owner's, and only theirs.** See Section 11.3. No co-author trailers, tool credits, or "generated with" notices anywhere — commits, PRs, headers, docstrings, READMEs, LICENSE.
 4. **Comments read like a working engineer wrote them.** See Section 11.2. Explain intent and trade-offs, not the obvious. Natural and concise. Never manufacture artificial flaws or staged uncertainty.
@@ -23,11 +23,11 @@ Four hard rules that bind every line of code, every commit, every document:
 
 ## 1. Executive summary
 
-AeroScan is a self-hosted, authorization-first dynamic application security testing (DAST) platform built around the threats that matter to a modern airline: broken object-level authorization on booking references, broken authentication, excessive data exposure, and the API supply-chain surface created by interline and loyalty integrations.
+Squawk is a self-hosted, authorization-first dynamic application security testing (DAST) platform built around the threats that matter to a modern airline: broken object-level authorization on booking references, broken authentication, excessive data exposure, and the API supply-chain surface created by interline and loyalty integrations.
 
 Its defining property is restraint. Before any scan runs, the operator must cryptographically prove control of the target domain. Every outbound request is checked against an immutable, per-job scope policy with a default-deny gate. An adaptive throttle continuously backs off if the target shows stress — a "do no harm" control modelled on the reality that airline systems are safety-adjacent and must never be degraded by a security test.
 
-The platform ships with its own test range: **Nimbus Air**, a deliberately vulnerable (fictional) airline booking stack. AeroScan scans that range end to end, correlates findings from multiple engines, scores them by real-world context, and maps every result to OWASP, PCI DSS v4.0, and the MAS Technology Risk Management Guidelines.
+The platform ships with its own test range: **Nimbus Air**, a deliberately vulnerable (fictional) airline booking stack. Squawk scans that range end to end, correlates findings from multiple engines, scores them by real-world context, and maps every result to OWASP, PCI DSS v4.0, and the MAS Technology Risk Management Guidelines.
 
 The project is a portfolio piece for an Information Security & Risk Management internship. It is scoped so that one person can finish and polish it, and it is designed so that the single most impressive thing about it — a scanner that refuses to run until you prove you own the target — is also the thing that signals the right professional instinct to an aviation security team.
 
@@ -43,20 +43,20 @@ The project is a portfolio piece for an Information Security & Risk Management i
 ### 2.2 Success criteria (acceptance)
 The project is done when all of the following hold:
 - A reviewer clones the repo and reaches a fully working environment with one command.
-- AeroScan will not scan an unverified target — proven by an automated test suite that attempts to and is blocked every time.
+- Squawk will not scan an unverified target — proven by an automated test suite that attempts to and is blocked every time.
 - A full scan of the Nimbus Air range detects at least five distinct vulnerability classes, de-duplicated and correlated across engines.
 - The authorization-testing engine independently finds the booking-reference BOLA and reports which identities could reach which objects.
 - The adaptive throttle measurably backs off when the target is stressed (demonstrated with a forced-latency test).
 - Every finding traces to a control ID in the compliance matrix across all three frameworks.
 - The scope gate has property-based tests proving default-deny holds across fuzzed inputs; overall test coverage ≥ 85% on the control plane.
-- A manual penetration-test report exists, aligned to OWASP WSTG, cross-checking AeroScan's automated results.
+- A manual penetration-test report exists, aligned to OWASP WSTG, cross-checking Squawk's automated results.
 - A 10-slide report PDF and a 3-minute demo script exist in `/docs`.
 - The attribution audit (Section 11.3) returns zero tool/co-author strings across the tree and git history.
 
 ## 3. Scope
 
 ### 3.1 In scope
-- AeroScan: a self-hosted DAST control plane with ownership verification, scope enforcement, scanner orchestration, an authorization-testing engine, findings correlation, risk scoring, compliance mapping, scoped performance testing, and a dashboard.
+- Squawk: a self-hosted DAST control plane with ownership verification, scope enforcement, scanner orchestration, an authorization-testing engine, findings correlation, risk scoring, compliance mapping, scoped performance testing, and a dashboard.
 - Nimbus Air: a bundled, deliberately vulnerable, fictional airline booking stack that serves as the only scan target.
 - A manual penetration test of Nimbus Air and written research artifacts analysing the real aviation threat landscape as case studies.
 
@@ -76,10 +76,10 @@ The project is done when all of the following hold:
 ## 4. System architecture
 
 ### 4.1 Two planes
-The system separates the **target plane** (the thing being tested) from the **control plane** (the thing doing the testing). They never share a trust boundary; AeroScan treats Nimbus Air as a black box reached only over the network, exactly as it would treat any external target.
+The system separates the **target plane** (the thing being tested) from the **control plane** (the thing doing the testing). They never share a trust boundary; Squawk treats Nimbus Air as a black box reached only over the network, exactly as it would treat any external target.
 
 ```
-┌───────────────────────────── CONTROL PLANE (AeroScan) ─────────────────────────────┐
+┌───────────────────────────── CONTROL PLANE (Squawk) ─────────────────────────────┐
 │                                                                                     │
 │   ┌──────────────┐   ┌─────────────────────┐   ┌───────────────────────────────┐    │
 │   │  Dashboard   │◄──│   Control API        │──►│  Scope & Authorization svc    │    │
@@ -113,7 +113,7 @@ The system separates the **target plane** (the thing being tested) from the **co
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 4.2 AeroScan internal design notes
+### 4.2 Squawk internal design notes
 - **Scan lifecycle is an explicit state machine:** `DRAFT → PENDING_VERIFICATION → VERIFIED → QUEUED → RUNNING → (COMPLETED | FAILED | ABORTED)`. Transitions are centralised and logged; nothing runs a scan by reaching into internals.
 - **The scope gate is a chokepoint, not a sprinkle.** All outbound HTTP from every adapter routes through one instrumented client that calls `authorize_request()` first. Adapters cannot construct their own unguarded client; the guarded client is the only one injected.
 - **Engines are adapters behind a common interface** (`run(target, scope) -> list[RawFinding]`), so adding an engine never touches the gate or the normalizer.
@@ -133,7 +133,7 @@ Chosen for maturity and documentation, not novelty.
 
 ### 4.4 Repository structure
 ```
-aeroscan/
+squawk/
 ├── README.md
 ├── PRD.md
 ├── docker-compose.yml
@@ -193,12 +193,12 @@ Ownership verification (precondition for a host ever entering `verified_hosts`):
 function begin_verification(domain):
     token = hex(csprng(32))                       # cryptographically random, single-use
     store Verification(domain, token, expires=now()+24h, status=PENDING)
-    return "_aeroscan-challenge." + domain + " TXT = " + token
+    return "_squawk-challenge." + domain + " TXT = " + token
 
 function check_verification(domain):
     v = load_pending(domain)
     if v is None or expired(v):                   return FAIL
-    published = dns_txt("_aeroscan-challenge." + domain)
+    published = dns_txt("_squawk-challenge." + domain)
     if any(constant_time_eq(r, v.token) for r in published):
         mark Verified(domain, proof=published, verified_at=now())
         return PASS
@@ -379,7 +379,7 @@ Automated scanning is necessary but not sufficient; a strong candidate shows the
 
 - **Methodology:** align to OWASP WSTG and PTES. Phases: scoping → information gathering (use the OpenAPI inventory) → threat modelling (STRIDE, feeds `docs/threat-model.md`) → manual testing with **Burp Suite** → exploitation PoC → remediation → retest.
 - **Manual testing focus:** object-level authorization (confirm the engine's BOLA finding by hand and extend it), authentication logic, business-logic flaws a scanner can't see (e.g. price/seat manipulation, enumeration-driven PNR harvesting), and input handling.
-- **Cross-check:** a section of the report compares AeroScan's automated findings against the manual findings — what the tool caught, what it missed, and why. This single comparison is one of the most senior things in the whole project.
+- **Cross-check:** a section of the report compares Squawk's automated findings against the manual findings — what the tool caught, what it missed, and why. This single comparison is one of the most senior things in the whole project.
 - **Deliverable:** `docs/pentest-report.md` with an executive summary, methodology, findings (each with CVSS, reproduction steps, redacted PoC, business impact, remediation), and a retest outcome after fixes.
 
 ## 11. Coding standards and conventions

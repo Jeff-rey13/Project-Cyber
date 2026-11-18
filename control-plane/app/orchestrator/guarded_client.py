@@ -114,5 +114,5 @@ def guarded_client(
         trust_env=False,
         follow_redirects=follow_redirects,
         timeout=timeout,
-        headers={"User-Agent": "AeroScan/1.0 (authorized security test)"},
+        headers={"User-Agent": "Squawk/1.0 (authorized security test)"},
     )

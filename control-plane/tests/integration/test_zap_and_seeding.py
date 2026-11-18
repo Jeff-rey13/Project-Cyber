@@ -102,7 +102,7 @@ class FakeZap:
         self.calls: list[tuple[str, dict]] = []
         self.alerts = alerts if alerts is not None else [
             {"pluginId": "10038", "alert": "CSP header not set", "risk": "Medium", "confidence": "High",
-             "url": "http://127.0.0.1:8080/bookings/AEROSCAN0", "method": "GET", "cweid": "693", "evidence": ""},
+             "url": "http://127.0.0.1:8080/bookings/SQUAWK0", "method": "GET", "cweid": "693", "evidence": ""},
             {"pluginId": "40018", "alert": "SQL Injection", "risk": "High", "confidence": "Low",
              "url": "http://127.0.0.1:8080/auth/token", "method": "POST", "param": "email", "cweid": "89"},
         ]
@@ -135,7 +135,7 @@ class FakeZap:
 
 
 def zap(fake, key=KEY, **cfg):
-    config = ZapConfig(api_url="http://zap:8090", api_key="zk", upstream_proxy=("aeroscan-gate", 8899), poll_seconds=1, **cfg)
+    config = ZapConfig(api_url="http://zap:8090", api_key="zk", upstream_proxy=("squawk-gate", 8899), poll_seconds=1, **cfg)
     return ZapAdapter(config, httpx.Client(base_url="http://zap:8090", transport=fake.transport()), sleep=lambda s: None, key=key)
 
 
@@ -148,7 +148,7 @@ def test_zap_run_sequence_and_mapping():
 
     names = [n for n, _ in fake.calls]
     assert names[:3] == ["core.newSession", "network.setHttpProxy", "network.setHttpProxyEnabled"]
-    assert fake.calls[1][1]["host"] == "aeroscan-gate" and fake.calls[1][1]["port"] == "8899"
+    assert fake.calls[1][1]["host"] == "squawk-gate" and fake.calls[1][1]["port"] == "8899"
     accessed = [q["url"] for n, q in fake.calls if n == "core.accessUrl"]
     assert "http://127.0.0.1:8080/admin/purge" not in accessed and f"http://127.0.0.1:8080/bookings/{PLACEHOLDER}" in accessed
     assert names.index("spider.scan") < names.index("ascan.scan") < names.index("core.alerts")
@@ -227,7 +227,7 @@ def test_proxy_forwards_in_scope(proxy):
 def test_proxy_blocks_out_of_scope(proxy, method, url):
     c, sent, stats, _ = proxy
     r = c.request(method, url)
-    assert r.status_code == 403 and r.headers["x-aeroscan-gate"] == "deny"
+    assert r.status_code == 403 and r.headers["x-squawk-gate"] == "deny"
     assert sent == [] and stats.denied == 1
 
 

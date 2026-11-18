@@ -23,7 +23,7 @@ from .openapi_seed import OPENAPI_PATHS, fetch_openapi
 
 SENSITIVE_KEYS = ("dob", "date_of_birth", "passport", "card", "pan", "cvv", "password", "national_id")
 PRIVILEGED_FIELDS = ("role", "loyalty_tier", "is_admin", "loyalty_points", "tier")
-SENTINEL = "aeroscan-probe"
+SENTINEL = "squawk-probe"
 BURST = 25
 BASELINE_HEADERS = ("x-content-type-options", "cache-control")
 

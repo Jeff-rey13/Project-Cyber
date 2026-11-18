@@ -93,12 +93,12 @@ def test_bootstrap_self_verifies_lab_only_when_asked(monkeypatch, tmp_path):
 
     db = tmp_path / "boot.db"
     monkeypatch.setenv("DATABASE_URL", f"sqlite:///{db.as_posix()}")
-    monkeypatch.setenv("AEROSCAN_SNAPSHOT_KEY", SNAPSHOT_KEY.decode())
-    monkeypatch.setenv("AEROSCAN_OPERATOR_TOKEN", "operator-token-0123456789")
+    monkeypatch.setenv("SQUAWK_SNAPSHOT_KEY", SNAPSHOT_KEY.decode())
+    monkeypatch.setenv("SQUAWK_OPERATOR_TOKEN", "operator-token-0123456789")
     monkeypatch.setenv("REDIS_URL", "redis://localhost:1/0")
 
     for flag, expected in (("false", 0), ("true", 1)):
-        monkeypatch.setenv("AEROSCAN_LAB_SELF_VERIFY", flag)
+        monkeypatch.setenv("SQUAWK_LAB_SELF_VERIFY", flag)
         config.get_settings.cache_clear()
         import app.main as main
 

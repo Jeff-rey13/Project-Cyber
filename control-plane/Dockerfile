@@ -21,8 +21,8 @@ COPY nuclei-templates ./nuclei-templates
 # dashboard lives at the repo root; compose passes it in as a named build context
 COPY --from=dashboard . /dashboard
 
-RUN useradd --create-home aeroscan && mkdir -p /data && chown -R aeroscan /srv /data
-USER aeroscan
+RUN useradd --create-home squawk && mkdir -p /data && chown -R squawk /srv /data
+USER squawk
 
 EXPOSE 8000
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

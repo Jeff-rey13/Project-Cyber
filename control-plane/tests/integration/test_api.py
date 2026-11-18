@@ -47,7 +47,7 @@ def test_health_is_open_everything_else_needs_token(api):
 
 def test_verification_endpoints(api):
     r = api.post("/targets/nimbus.test/verification", json={"method": "dns_txt"}, headers=H)
-    assert r.status_code == 200 and r.json()["instruction"].startswith("_aeroscan-challenge.nimbus.test TXT = ")
+    assert r.status_code == 200 and r.json()["instruction"].startswith("_squawk-challenge.nimbus.test TXT = ")
     assert api.post("/targets/http:%2F%2Fx/verification", json={}, headers=H).status_code in (400, 404)
     assert api.post("/targets/127.0.0.1/verification", json={"method": "loopback"}, headers=H).status_code == 400
     assert api.post("/targets/10.0.0.1/self-verify", headers=H).status_code == 400
@@ -140,5 +140,5 @@ def test_posture_score_bounds():
 
 def test_dashboard_is_served(api):
     r = api.get("/dashboard/")
-    assert r.status_code == 200 and "AeroScan" in r.text
+    assert r.status_code == 200 and "Squawk" in r.text
     assert api.get("/", follow_redirects=False).headers["location"] == "/dashboard/"

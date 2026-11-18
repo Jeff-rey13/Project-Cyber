@@ -53,7 +53,7 @@ def _job_view(job: ScanJob) -> dict:
 
 def create_api(settings: Settings, engine, enqueue: Callable[[str], None]) -> FastAPI:
     init_db(engine)
-    app = FastAPI(title="AeroScan control API", version="1.0.0")
+    app = FastAPI(title="Squawk control API", version="1.0.0")
 
     def get_session() -> Iterator[Session]:
         with Session(engine) as s:

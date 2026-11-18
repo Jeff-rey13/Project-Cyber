@@ -11,7 +11,7 @@ from ..db import init_db, make_engine
 from ..engines.registry import register_from_settings
 from .service import execute_scan
 
-QUEUE_NAME = "aeroscan-scans"
+QUEUE_NAME = "squawk-scans"
 JOB_TIMEOUT_SECONDS = 3600
 
 

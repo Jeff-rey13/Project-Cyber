@@ -4,7 +4,7 @@
     python -m app.cli try-unverified http://example.com
     python -m app.cli findings <scan-id>
 
-Reads AEROSCAN_API (default http://127.0.0.1:8000) and AEROSCAN_OPERATOR_TOKEN.
+Reads SQUAWK_API (default http://127.0.0.1:8000) and SQUAWK_OPERATOR_TOKEN.
 """
 
 import argparse
@@ -22,10 +22,10 @@ TERMINAL = {"COMPLETED", "FAILED", "ABORTED"}
 
 def _client() -> httpx.Client:
     # inside the api container the token is already in the environment via env_file
-    token = os.getenv("AEROSCAN_OPERATOR_TOKEN", "")
+    token = os.getenv("SQUAWK_OPERATOR_TOKEN", "")
     if not token:
-        sys.exit("set AEROSCAN_OPERATOR_TOKEN")
-    return httpx.Client(base_url=os.getenv("AEROSCAN_API", "http://127.0.0.1:8000"),
+        sys.exit("set SQUAWK_OPERATOR_TOKEN")
+    return httpx.Client(base_url=os.getenv("SQUAWK_API", "http://127.0.0.1:8000"),
                         headers={"Authorization": f"Bearer {token}"}, timeout=30, trust_env=False)
 
 
@@ -105,7 +105,7 @@ def cmd_findings(a) -> int:
 
 
 def main(argv=None) -> int:
-    p = argparse.ArgumentParser(prog="aeroscan")
+    p = argparse.ArgumentParser(prog="squawk")
     sub = p.add_subparsers(dest="cmd", required=True)
     s = sub.add_parser("scan")
     s.add_argument("--base-url", default="http://127.0.0.1:8080")

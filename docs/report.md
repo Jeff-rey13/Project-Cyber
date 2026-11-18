@@ -1,4 +1,4 @@
-# AeroScan: authorization-first security testing for airline APIs
+# Squawk: authorization-first security testing for airline APIs
 
 Source for the 10-slide deck. One `##` per slide; speaker notes under each.
 
@@ -23,7 +23,7 @@ and the paths are integrations.*
 
 ## 3. Architecture
 
-- Control plane (AeroScan) vs target plane (Nimbus Air), network-only contact
+- Control plane (Squawk) vs target plane (Nimbus Air), network-only contact
 - One guarded HTTP client; external engines (ZAP, Nuclei, k6) only via the gate proxy
 - Scan lifecycle as an explicit state machine; every transition audited
 

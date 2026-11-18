@@ -1,8 +1,8 @@
-id: aeroscan-booking-lookup-unauthenticated
+id: squawk-booking-lookup-unauthenticated
 
 info:
   name: Booking lookup answers without authentication
-  author: aeroscan
+  author: squawk
   severity: high
   description: A booking endpoint returns passenger data to a caller that sent no credentials.
   tags: auth-bypass,airline,api

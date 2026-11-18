@@ -19,8 +19,8 @@ def test_dns_txt_joins_split_strings(monkeypatch):
         return [_Rec("abc", "def"), _Rec("xyz")]
 
     monkeypatch.setattr(dns.resolver, "resolve", fake_resolve)
-    assert verification.dns_txt_lookup("_aeroscan-challenge.nimbus.test") == ["abcdef", "xyz"]
-    assert seen["q"] == ("_aeroscan-challenge.nimbus.test", "TXT")
+    assert verification.dns_txt_lookup("_squawk-challenge.nimbus.test") == ["abcdef", "xyz"]
+    assert seen["q"] == ("_squawk-challenge.nimbus.test", "TXT")
 
 
 def test_dns_failure_is_empty(monkeypatch):
@@ -39,7 +39,7 @@ def test_http_fetch_ok_and_truncated(monkeypatch):
         return httpx.Response(200, text="t" * 1000)
 
     monkeypatch.setattr(httpx, "get", fake_get)
-    assert verification.http_file_fetch("http://x.test/.well-known/aeroscan-challenge.txt") == "t" * 256
+    assert verification.http_file_fetch("http://x.test/.well-known/squawk-challenge.txt") == "t" * 256
     assert calls["redirects"] is False
 
 

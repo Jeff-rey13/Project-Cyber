@@ -23,7 +23,7 @@ def raw(engine="zap", cls="bola", url="http://127.0.0.1:8080/bookings/Q7X2KD", s
 @pytest.mark.parametrize("url,expected", [
     ("http://h/bookings/Q7X2KD", "h/bookings/{id}"),
     ("http://h/bookings/ABCDEF/checkin", "h/bookings/{id}/checkin"),
-    ("http://h/bookings/AEROSCAN0", "h/bookings/{id}"),
+    ("http://h/bookings/SQUAWK0", "h/bookings/{id}"),
     ("http://h/users/12345", "h/users/{id}"),
     ("http://h/u/550e8400-e29b-41d4-a716-446655440000", "h/u/{id}"),
     ("http://h/t/deadbeefdeadbeef", "h/t/{id}"),
@@ -165,7 +165,7 @@ def test_authz_and_nuclei_views_of_unauth_access_merge():
 
     authz = raw(engine="authz", cls="broken_auth", sev="critical", conf="high", url="http://h:8080/bookings/Q7X2KD",
                 extra={"requires_auth": True})
-    nuclei = record_to_finding({"template-id": "aeroscan-booking-lookup-unauthenticated", "matched-at": "http://h:8080/bookings/M3PA9Z",
+    nuclei = record_to_finding({"template-id": "squawk-booking-lookup-unauthenticated", "matched-at": "http://h:8080/bookings/M3PA9Z",
                                 "info": {"severity": "high", "tags": ["auth-bypass", "airline"]}})
     (m,) = correlate([authz, nuclei])
     assert m.sources == ["authz", "nuclei"] and m.severity == "critical"

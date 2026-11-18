@@ -42,23 +42,23 @@ def _handler_for(client: httpx.Client):
         def _forward(self):
             url = self.path
             if not url.lower().startswith("http://"):
-                return self._reply(400, b"aeroscan gate proxy: absolute http:// url required")
+                return self._reply(400, b"squawk gate proxy: absolute http:// url required")
             length = int(self.headers.get("Content-Length") or 0)
             if length > MAX_BODY:
-                return self._reply(413, b"aeroscan gate proxy: body too large")
+                return self._reply(413, b"squawk gate proxy: body too large")
             body = self.rfile.read(length) if length else None
             headers = {k: v for k, v in self.headers.items() if k.lower() not in _DROP}
             try:
                 r = client.request(self.command, url, headers=headers, content=body)
             except ScopeViolation as exc:
-                return self._reply(403, f"aeroscan gate: {exc.decision.reason}".encode(), {"X-AeroScan-Gate": "deny"})
+                return self._reply(403, f"squawk gate: {exc.decision.reason}".encode(), {"X-Squawk-Gate": "deny"})
             except httpx.HTTPError as exc:
-                return self._reply(502, f"aeroscan gate proxy: upstream error {type(exc).__name__}".encode())
+                return self._reply(502, f"squawk gate proxy: upstream error {type(exc).__name__}".encode())
             out = {k: v for k, v in r.headers.items() if k.lower() not in _DROP | {"content-encoding"}}
             self._reply(r.status_code, r.content, out)
 
         def do_CONNECT(self):
-            self._reply(403, b"aeroscan gate proxy: CONNECT not supported", {"X-AeroScan-Gate": "deny"})
+            self._reply(403, b"squawk gate proxy: CONNECT not supported", {"X-Squawk-Gate": "deny"})
 
         do_GET = do_POST = do_PUT = do_PATCH = do_DELETE = do_HEAD = do_OPTIONS = do_TRACE = _forward
 
@@ -77,7 +77,7 @@ class GateProxy:
         return str(host), int(port)
 
     def __enter__(self) -> "GateProxy":
-        self._thread = threading.Thread(target=self._server.serve_forever, name="aeroscan-gate-proxy", daemon=True)
+        self._thread = threading.Thread(target=self._server.serve_forever, name="squawk-gate-proxy", daemon=True)
         self._thread.start()
         return self
 

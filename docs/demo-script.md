@@ -8,7 +8,7 @@ identities` already run. Font size up.
 
 **0:00 to 0:20: the premise**
 
-> "AeroScan is a security scanner for airline booking APIs. The thing I want
+> "Squawk is a security scanner for airline booking APIs. The thing I want
 > you to remember about it is that it won't send a single packet to a host
 > until you've proven you own it. Let me show you it refusing."
 

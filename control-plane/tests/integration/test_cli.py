@@ -69,7 +69,7 @@ def test_no_findings_message(capsys):
 
 
 def test_missing_token_exits(monkeypatch):
-    monkeypatch.delenv("AEROSCAN_OPERATOR_TOKEN", raising=False)
+    monkeypatch.delenv("SQUAWK_OPERATOR_TOKEN", raising=False)
     with pytest.raises(SystemExit):
         cli._client()
 

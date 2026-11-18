@@ -36,15 +36,15 @@ def _required(name: str, min_len: int = 16) -> str:
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
     return Settings(
-        database_url=os.getenv("DATABASE_URL", "sqlite:///./aeroscan.db"),
+        database_url=os.getenv("DATABASE_URL", "sqlite:///./squawk.db"),
         redis_url=os.getenv("REDIS_URL", "redis://localhost:6379/0"),
-        snapshot_key=_required("AEROSCAN_SNAPSHOT_KEY").encode(),
-        operator_token=_required("AEROSCAN_OPERATOR_TOKEN"),
-        gate_proxy_bind=os.getenv("AEROSCAN_GATE_PROXY_BIND", "127.0.0.1"),
-        gate_proxy_port=int(os.getenv("AEROSCAN_GATE_PROXY_PORT", "8899")),
-        gate_proxy_public_host=os.getenv("AEROSCAN_GATE_PROXY_HOST", "127.0.0.1"),
+        snapshot_key=_required("SQUAWK_SNAPSHOT_KEY").encode(),
+        operator_token=_required("SQUAWK_OPERATOR_TOKEN"),
+        gate_proxy_bind=os.getenv("SQUAWK_GATE_PROXY_BIND", "127.0.0.1"),
+        gate_proxy_port=int(os.getenv("SQUAWK_GATE_PROXY_PORT", "8899")),
+        gate_proxy_public_host=os.getenv("SQUAWK_GATE_PROXY_HOST", "127.0.0.1"),
         zap_api_url=os.getenv("ZAP_API_URL", ""),
         zap_api_key=os.getenv("ZAP_API_KEY", ""),
         nuclei_binary=os.getenv("NUCLEI_BINARY", ""),
-        lab_self_verify=os.getenv("AEROSCAN_LAB_SELF_VERIFY", "").lower() in {"1", "true", "yes"},
+        lab_self_verify=os.getenv("SQUAWK_LAB_SELF_VERIFY", "").lower() in {"1", "true", "yes"},
     )

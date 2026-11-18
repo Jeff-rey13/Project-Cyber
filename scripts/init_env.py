@@ -19,7 +19,7 @@ def main() -> int:
             line = f"{key}={secrets.token_urlsafe(32)}"
         lines.append(line)
     env.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    print("wrote .env with generated secrets (operator token is AEROSCAN_OPERATOR_TOKEN)")
+    print("wrote .env with generated secrets (operator token is SQUAWK_OPERATOR_TOKEN)")
     return 0
 
 

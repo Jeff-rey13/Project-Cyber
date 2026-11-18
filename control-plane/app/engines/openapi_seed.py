@@ -18,7 +18,7 @@ OPENAPI_PATHS = ("/openapi.json", "/swagger.json", "/v3/api-docs")
 HTTP_METHODS = {"get", "post", "put", "patch", "delete", "head", "options"}
 _PARAM = re.compile(r"\{([^}/]+)\}")
 # placeholder that is obviously a test value and unlikely to collide with real ids
-PLACEHOLDER = "AEROSCAN0"
+PLACEHOLDER = "SQUAWK0"
 
 
 @dataclass(frozen=True)

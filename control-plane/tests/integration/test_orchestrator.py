@@ -229,8 +229,8 @@ def test_rq_round_trip(tmp_path, monkeypatch):
 
     db = tmp_path / "rq.db"
     monkeypatch.setenv("DATABASE_URL", f"sqlite:///{db.as_posix()}")
-    monkeypatch.setenv("AEROSCAN_SNAPSHOT_KEY", SNAPSHOT_KEY.decode())
-    monkeypatch.setenv("AEROSCAN_OPERATOR_TOKEN", "operator-token-0123456789")
+    monkeypatch.setenv("SQUAWK_SNAPSHOT_KEY", SNAPSHOT_KEY.decode())
+    monkeypatch.setenv("SQUAWK_OPERATOR_TOKEN", "operator-token-0123456789")
     config.get_settings.cache_clear()
     monkeypatch.setitem(service.ENGINES, "probe", ProbeEngine)
 
@@ -253,8 +253,8 @@ def test_rq_round_trip(tmp_path, monkeypatch):
 def test_config_fails_closed(monkeypatch):
     from app import config
 
-    monkeypatch.setenv("AEROSCAN_SNAPSHOT_KEY", "change-me")
-    monkeypatch.setenv("AEROSCAN_OPERATOR_TOKEN", "operator-token-0123456789")
+    monkeypatch.setenv("SQUAWK_SNAPSHOT_KEY", "change-me")
+    monkeypatch.setenv("SQUAWK_OPERATOR_TOKEN", "operator-token-0123456789")
     config.get_settings.cache_clear()
     with pytest.raises(config.ConfigError):
         config.get_settings()

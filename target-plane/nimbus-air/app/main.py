@@ -1,4 +1,4 @@
-"""Nimbus Air: a fictional airline booking API used as AeroScan's only scan target.
+"""Nimbus Air: a fictional airline booking API used as Squawk's only scan target.
 
 Every weakness is gated on `settings.secure_mode` so the broken and fixed
 behaviour can be shown side by side. Search for "VULN-" to find them all:

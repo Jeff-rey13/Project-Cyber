@@ -1,8 +1,8 @@
-# AeroScan
+# Squawk
 
 **A security scanner for airline booking APIs that refuses to scan anything you haven't proven you own.**
 
-AeroScan is a self-hosted dynamic application security testing (DAST) platform built around one idea: a scanner pointed at the wrong target, or run too hard against a fragile one, is a liability. So the first job of this tool is to refuse. Finding bugs comes second.
+Squawk is a self-hosted dynamic application security testing (DAST) platform built around one idea: a scanner pointed at the wrong target, or run too hard against a fragile one, is a liability. So the first job of this tool is to refuse. Finding bugs comes second.
 
 It ships with its own target: **Nimbus Air**, a fictional airline booking API with five deliberate flaws, each paired with a `secure_mode` fix. Nimbus Air is the only thing this project is meant to scan.
 
@@ -12,14 +12,14 @@ It ships with its own target: **Nimbus Air**, a fictional airline booking API wi
 
 Two planes that only ever talk over the network:
 
-- **Control plane (AeroScan).** Verifies you own the target, freezes the scan scope, runs its engines through a single default-deny gate, correlates and risk-scores the results, and maps each finding to OWASP API Top 10, PCI DSS v4.0 and MAS TRM.
+- **Control plane (Squawk).** Verifies you own the target, freezes the scan scope, runs its engines through a single default-deny gate, correlates and risk-scores the results, and maps each finding to OWASP API Top 10, PCI DSS v4.0 and MAS TRM.
 - **Target plane (Nimbus Air).** A deliberately vulnerable booking API with synthetic passenger data, used to prove the scanner works and to practise a hands-on penetration test.
 
 ## Why it works the way it does
 
 Airline systems carry passport-grade identity data and are safety-adjacent. Two failure modes matter more than in a typical web app:
 
-1. **Scanning the wrong thing.** A booking API you don't own is someone's production system. AeroScan proves ownership (DNS TXT record, hosted file, or loopback for the lab), freezes and HMAC-seals the scope at queue time, and runs every request through a default-deny gate. Property tests (Hypothesis) throw encoded traversal, decimal IPs, userinfo tricks and IDNA dots at the gate; two real bypass candidates were found and fixed during development.
+1. **Scanning the wrong thing.** A booking API you don't own is someone's production system. Squawk proves ownership (DNS TXT record, hosted file, or loopback for the lab), freezes and HMAC-seals the scope at queue time, and runs every request through a default-deny gate. Property tests (Hypothesis) throw encoded traversal, decimal IPs, userinfo tricks and IDNA dots at the gate; two real bypass candidates were found and fixed during development.
 2. **Hammering a fragile backend.** An adaptive token-bucket throttle halves its rate on latency or errors, has hard ceilings that are not configurable upward (20 req/s, 4 concurrent), and aborts the scan if the target shows sustained stress.
 
 Neither behaviour is optional, and both are covered by tests.
@@ -45,7 +45,7 @@ make refuse-demo  # watch it refuse an unverified host
 make scan         # full scan of the lab with all engines
 ```
 
-Dashboard: <http://127.0.0.1:8000/dashboard/> (operator token is `AEROSCAN_OPERATOR_TOKEN` in `.env`).
+Dashboard: <http://127.0.0.1:8000/dashboard/> (operator token is `SQUAWK_OPERATOR_TOKEN` in `.env`).
 Lab API docs: <http://127.0.0.1:8080/docs>. Everything binds to loopback only.
 
 No `make` (e.g. Windows)? The targets are thin wrappers:
@@ -161,7 +161,7 @@ Coverage: 99% control plane, 99% `scope/`.
 ## Repository
 
 ```
-control-plane/     AeroScan: api, scope gate, orchestrator, engines, findings, compliance, perf
+control-plane/     Squawk: api, scope gate, orchestrator, engines, findings, compliance, perf
 target-plane/      Nimbus Air: the fictional vulnerable booking API
 dashboard/         static dashboard reading /metrics
 compliance/        generated control matrix
@@ -174,7 +174,7 @@ External engines can't scan HTTPS targets yet (the gate proxy doesn't terminate 
 
 ## Ethics
 
-Nimbus Air and all its data are fictional and synthetic. Real airlines appear only as cited case studies in [docs/report.md](docs/report.md). The lab is deliberately vulnerable and binds to loopback only; do not deploy it on any network you do not fully control. Don't point AeroScan at anything you don't own; it's built to stop you, but the responsibility is still yours.
+Nimbus Air and all its data are fictional and synthetic. Real airlines appear only as cited case studies in [docs/report.md](docs/report.md). The lab is deliberately vulnerable and binds to loopback only; do not deploy it on any network you do not fully control. Don't point Squawk at anything you don't own; it's built to stop you, but the responsibility is still yours.
 
 ## License
 

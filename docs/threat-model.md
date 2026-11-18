@@ -1,6 +1,6 @@
 # Threat model
 
-Two systems, two models. Nimbus Air is the thing under test; AeroScan is a
+Two systems, two models. Nimbus Air is the thing under test; Squawk is a
 security tool that can itself do damage if it's misused or compromised. The
 second model matters more, because a scanner is a loaded weapon pointed at
 whatever its operator types in.
@@ -60,11 +60,11 @@ end to end.
 
 ---
 
-## 2. AeroScan (control plane)
+## 2. Squawk (control plane)
 
 ### 2.1 Assets
 
-1. **Third parties' availability and data.** The biggest risk AeroScan carries
+1. **Third parties' availability and data.** The biggest risk Squawk carries
    is to systems that aren't its operator's.
 2. The scan scope (what we're allowed to touch) and its proof of ownership.
 3. Findings and evidence (they describe live weaknesses).

@@ -19,7 +19,7 @@ from app.engines.nuclei_adapter import (
 CTX = ScanContext(job_id="j", base_url="http://127.0.0.1:8080")
 
 HIT = {
-    "template-id": "aeroscan-openapi-schema-exposed",
+    "template-id": "squawk-openapi-schema-exposed",
     "info": {"name": "OpenAPI schema publicly exposed", "severity": "low", "tags": ["exposure", "openapi"],
              "classification": {"cwe-id": ["cwe-200"]}, "description": "d"},
     "matched-at": "http://127.0.0.1:8080/openapi.json",
@@ -42,14 +42,14 @@ class FakeRunner:
 
 
 def adapter(runner, **kw):
-    return NucleiAdapter(NucleiConfig(proxy_url="http://aeroscan-gate:8899", **kw), runner=runner)
+    return NucleiAdapter(NucleiConfig(proxy_url="http://squawk-gate:8899", **kw), runner=runner)
 
 
 def test_argv_forces_safety_flags_and_caps():
     r = FakeRunner(out=json.dumps(HIT) + "\n")
     adapter(r, rate_limit=500, concurrency=50, variables={"pnr": "ABC123"}).run(None, None, CTX)
     a = r.argv
-    assert a[a.index("-proxy") + 1] == "http://aeroscan-gate:8899"
+    assert a[a.index("-proxy") + 1] == "http://squawk-gate:8899"
     assert "-no-interactsh" in a and "-duc" in a
     assert int(a[a.index("-rl") + 1]) == HARD_MAX_RPS and int(a[a.index("-c") + 1]) == HARD_MAX_CONCURRENCY
     assert a[a.index("-u") + 1] == CTX.base_url and a[a.index("-var") + 1] == "pnr=ABC123"
