@@ -26,6 +26,7 @@ reports/out/
 *.zip
 *.tar.gz
 *.pdf
+!docs/report.pdf
 
 # editor / os
 .vscode/

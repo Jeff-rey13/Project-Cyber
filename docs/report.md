@@ -6,13 +6,13 @@ Source for the 10-slide deck. One `##` per slide; speaker notes under each.
 
 ## 1. Airline APIs leak through authorization, not exotic exploits
 
-- British Airways, 2018: payment-page skimming, roughly 400k customers; £20m ICO fine (2020)
-- Cathay Pacific, 2018: about 9.4m passengers' records exposed
-- SITA PSS, 2021: a shared passenger-service provider breached, affecting many carriers' frequent-flyer members including Singapore Airlines KrisFlyer
+- British Airways, 2018: payment-page skimming, about 429,612 customers and staff affected; £20m ICO fine (Oct 2020)
+- Cathay Pacific, 2018: about 9.4m passengers' records exposed; £500k ICO fine (2020)
+- SITA passenger-service system, 2021: a shared aviation IT provider breached, affecting frequent-flyer data across many carriers, including about 580,000 Singapore Airlines KrisFlyer/PPS members
 - Pattern: identity documents and loyalty value, reachable via APIs and partners
 
-*Notes: check every figure against the regulator or company statement before
-presenting. The point isn't the numbers, it's that the data is identity-grade
+*Notes: figures verified against ICO rulings and the airlines' own statements
+(Nov 2026). The point isn't the numbers, it's that the data is identity-grade
 and the paths are integrations.*
 
 ## 2. Why "authorization-first"
